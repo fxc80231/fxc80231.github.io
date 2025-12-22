@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业员工信息数据分析看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f8;
+            color: #333;
+        }
+        header {
+            background: linear-gradient(135deg, #007BFF, #00C6FF);
+            color: white;
+            padding: 20px 40px;
+            text-align: center;
+            position: relative;
+        }
+        .download-btn {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            background: #fff;
+            color: #007BFF;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .download-btn:hover {
+            background: #e0f7ff;
+        }
+        .container {
+            padding: 30px 40px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .kpi-card {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            flex: 1 1 250px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 18px;
+            color: #007BFF;
+        }
+        .card p {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .analysis {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        .analysis h2 {
+            margin-top: 0;
+            color: #007BFF;
+        }
+        .analysis p {
+            margin: 10px 0;
+        }
+        .charts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            flex: 1 1 45%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f0f4f8;
+        }
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        .positive {
+            color: green;
+        }
+        .negative {
+            color: red;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f4f6f8;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>企业员工信息数据分析看板</h1>
+        <button class="download-btn" onclick="downloadWord()">一键下载看板</button>
+    </header>
+    <div class="container">
+        <div class="kpi-card">
+            <div class="card">
+                <h3>总人数</h3>
+                <p id="totalEmployees">7</p>
+            </div>
+            <div class="card">
+                <h3>最早入职日期</h3>
+                <p id="oldestDate">2017-11-01</p>
+            </div>
+            <div class="card">
+                <h3>最新入职日期</h3>
+                <p id="newestDate">2022-05-16</p>
+            </div>
+            <div class="card">
+                <h3>平均入职年份</h3>
+                <p id="averageYear">2020</p>
+            </div>
+        </div>
+        <div class="analysis">
+            <h2>文字分析总结</h2>
+            <p><strong>营运能力：</strong>当前共有7名员工，数据表明公司运营规模较小，但员工分布较为广泛，覆盖多个区域门店。</p>
+            <p><strong>盈利能力：</strong>由于缺乏收入和利润数据，无法直接评估盈利能力，但从员工数量和门店分布来看，公司可能处于稳定发展阶段。</p>
+            <p><strong>关键增长点：</strong>最近两年（2021-2022）新增了3名员工，说明公司正在逐步扩张。其中，2022年入职的员工有2人，显示出近期增长趋势。</p>
+        </div>
+        <div class="charts">
+            <div class="chart-container">
+                <h3>员工入职年份分布</h3>
+                <canvas id="yearChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>门店分布</h3>
+                <canvas id="storeChart"></canvas>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>姓名</th>
+                    <th>门店</th>
+                    <th>入职日期</th>
+                </tr>
+            </thead>
+            <tbody id="dataTable">
+                <!-- 数据将在此动态生成 -->
+            </tbody>
+        </table>
+    </div>
+    <div class="footer">
+        &copy; 2025 企业数据分析看板
+    </div>
+    <script>
+        const data = [
+            { name: "艾莹", store: "东西湖田园街店", date: "2021-06-17" },
+            { name: "严大鹏", store: "光谷店", date: "2020-04-22" },
+            { name: "王俊", store: "黄陂前川店", date: "2018-05-15" },
+            { name: "吴恒旭", store: "江岸黄孝河路店", date: "2022-02-18" },
+            { name: "秦凡", store: "江汉香港路店", date: "2017-11-01" },
+            { name: "龙刚强", store: "硚口店", date: "2022-05-16" },
+            { name: "陆林", store: "青山建设三路店", date: "2021-04-12" }
+        ];
+
+        // KPI 计算
+        document.getElementById("totalEmployees").textContent = data.length;
+        const dates = data.map(item => new Date(item.date));
+        const oldestDate = new Date(Math.min(...dates)).toISOString().split('T')[0];
+        const newestDate = new Date(Math.max(...dates)).toISOString().split('T')[0];
+        document.getElementById("oldestDate").textContent = oldestDate;
+        document.getElementById("newestDate").textContent = newestDate;
+
+        const years = data.map(item => new Date(item.date).getFullYear());
+        const yearCounts = {};
+        years.forEach(year => {
+            yearCounts[year] = (yearCounts[year] || 0) + 1;
+        });
+        const avgYear = Math.round(years.reduce((sum, y) => sum + y, 0) / years.length);
+        document.getElementById("averageYear").textContent = avgYear;
+
+        // 动态填充表格
+        const tableBody = document.getElementById("dataTable");
+        data.forEach(item => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.store}</td>
+                <td>${item.date}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // 绘制图表
+        const ctxYear = document.getElementById('yearChart').getContext('2d');
+        const yearLabels = Object.keys(yearCounts).sort();
+        const yearData = yearLabels.map(label => yearCounts[label]);
+        new Chart(ctxYear, {
+            type: 'bar',
+            data: {
+                labels: yearLabels,
+                datasets: [{
+                    label: '入职人数',
+                    data: yearData,
+                    backgroundColor: '#007BFF'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        const storeCounts = {};
+        data.forEach(item => {
+            storeCounts[item.store] = (storeCounts[item.store] || 0) + 1;
+        });
+        const storeLabels = Object.keys(storeCounts);
+        const storeData = storeLabels.map(label => storeCounts[label]);
+
+        const ctxStore = document.getElementById('storeChart').getContext('2d');
+        new Chart(ctxStore, {
+            type: 'pie',
+            data: {
+                labels: storeLabels,
+                datasets: [{
+                    label: '门店分布',
+                    data: storeData,
+                    backgroundColor: ['#007BFF', '#6610F2', '#DC3545', '#17A2B8', '#28A745', '#FFC107', '#6C757D']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+
+        function downloadWord() {
+            const doc = new Blob([`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>企业员工信息数据分析看板</title>
+                </head>
+                <body>
+                    <h1>企业员工信息数据分析看板</h1>
+                    <h2>KPI 指标</h2>
+                    <ul>
+                        <li>总人数: ${data.length}</li>
+                        <li>最早入职日期: ${oldestDate}</li>
+                        <li>最新入职日期: ${newestDate}</li>
+                        <li>平均入职年份: ${avgYear}</li>
+                    </ul>
+                    <h2>文字分析总结</h2>
+                    <p><strong>营运能力：</strong>当前共有${data.length}名员工，数据表明公司运营规模较小，但员工分布较为广泛，覆盖多个区域门店。</p>
+                    <p><strong>盈利能力：</strong>由于缺乏收入和利润数据，无法直接评估盈利能力，但从员工数量和门店分布来看，公司可能处于稳定发展阶段。</p>
+                    <p><strong>关键增长点：</strong>最近两年（2021-2022）新增了3名员工，说明公司正在逐步扩张。其中，2022年入职的员工有2人，显示出近期增长趋势。</p>
+                    <h2>员工信息表格</h2>
+                    <table border="1">
+                        <tr>
+                            <th>姓名</th>
+                            <th>门店</th>
+                            <th>入职日期</th>
+                        </tr>
+                        ${data.map(item => `<tr><td>${item.name}</td><td>${item.store}</td><td>${item.date}</td></tr>`).join('')}
+                    </table>
+                    <h2>图表说明</h2>
+                    <p>1. 员工入职年份分布：显示了不同年份入职的员工人数。</p>
+                    <p>2. 门店分布：显示了各门店的员工人数占比。</p>
+                </body>
+                </html>
+            `], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(doc);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '企业员工信息数据分析看板.doc';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
