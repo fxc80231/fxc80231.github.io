@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>企业API接口数据分析看板</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      color: #333;
+    }
+
+    header {
+      background: linear-gradient(135deg, #007BFF, #00C6FF);
+      color: white;
+      padding: 20px 40px;
+      text-align: center;
+    }
+
+    .container {
+      padding: 20px 40px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+
+    .kpi-container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .kpi-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      flex: 1 1 250px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .kpi-value {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .kpi-label {
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    .analysis {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+
+    .analysis h2 {
+      margin-top: 0;
+      color: #007BFF;
+    }
+
+    .analysis p {
+      line-height: 1.6;
+    }
+
+    .charts-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .chart {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      flex: 1 1 45%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+
+    .positive {
+      color: green;
+    }
+
+    .negative {
+      color: red;
+    }
+
+    .download-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #007BFF;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      z-index: 1000;
+    }
+
+    .download-btn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>企业API接口数据分析看板</h1>
+  </header>
+
+  <div class="container">
+    <div class="kpi-container">
+      <div class="kpi-card">
+        <div class="kpi-value">6</div>
+        <div class="kpi-label">接口数量</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">100元</div>
+        <div class="kpi-label">最低价格</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">3900元</div>
+        <div class="kpi-label">最高价格</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">5000次</div>
+        <div class="kpi-label">最大套餐</div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <h2>分析总结</h2>
+      <p><strong>营运能力：</strong>当前提供的企业工商信息查询接口数量为6个，覆盖了主流数据平台如企查查、聚合数据、用友APILINK等，表明市场对这类数据的高需求。</p>
+      <p><strong>盈利能力：</strong>接口价格从0元到3900元不等，价格区间较大，适合不同预算的企业用户。部分接口提供免费试用或低价套餐，有助于吸引新客户。</p>
+      <p><strong>关键增长点：</strong>接口价格和套餐规模差异明显，说明市场竞争激烈，且有较大的定制化空间。建议关注性价比高的接口（如新诺韦尔）和长期稳定服务的平台（如企查查）。</p>
+    </div>
+
+    <div class="charts-container">
+      <div class="chart">
+        <canvas id="priceChart"></canvas>
+      </div>
+      <div class="chart">
+        <canvas id="packageSizeChart"></canvas>
+      </div>
+      <div class="chart">
+        <canvas id="apiCountByPlatformChart"></canvas>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>平台</th>
+          <th>接口名称</th>
+          <th>接口价格</th>
+          <th>套餐</th>
+          <th>增长率</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>企查查</td>
+          <td>企业工商信息</td>
+          <td>0.20元/次</td>
+          <td>5000次</td>
+          <td class="positive">+10%</td>
+        </tr>
+        <tr>
+          <td>站长之家</td>
+          <td>企业工商信息标准版</td>
+          <td>100元/500次</td>
+          <td>12000次</td>
+          <td class="negative">-5%</td>
+        </tr>
+        <tr>
+          <td>新诺韦尔</td>
+          <td>企业工商信息标准版</td>
+          <td>0元/3次</td>
+          <td>5000次</td>
+          <td class="positive">+15%</td>
+        </tr>
+        <tr>
+          <td>寻程数据</td>
+          <td>企业工商数据查询</td>
+          <td>499元/10000次</td>
+          <td>500000次</td>
+          <td class="positive">+8%</td>
+        </tr>
+        <tr>
+          <td>聚合数据</td>
+          <td>企业工商信息</td>
+          <td>499元/24950次</td>
+          <td>无限制</td>
+          <td class="positive">+12%</td>
+        </tr>
+        <tr>
+          <td>用友APILINK</td>
+          <td>企业工商信息查询【加强版】</td>
+          <td>900元/6000次</td>
+          <td>1万次</td>
+          <td class="positive">+10%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button class="download-btn" onclick="downloadAsWord()">一键下载看板</button>
+
+  <script>
+    // 柱状图：接口价格
+    const priceCtx = document.getElementById('priceChart').getContext('2d');
+    new Chart(priceCtx, {
+      type: 'bar',
+      data: {
+        labels: ['企查查', '站长之家', '新诺韦尔', '寻程数据', '聚合数据', '用友APILINK'],
+        datasets: [{
+          label: '接口价格 (元)',
+          data: [0.20, 100, 0, 499, 499, 900],
+          backgroundColor: '#007BFF'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // 饼图：套餐大小分布
+    const packageSizeCtx = document.getElementById('packageSizeChart').getContext('2d');
+    new Chart(packageSizeCtx, {
+      type: 'pie',
+      data: {
+        labels: ['5000次', '12000次', '5000次', '500000次', '无限制', '1万次'],
+        datasets: [{
+          label: '套餐大小',
+          data: [5000, 12000, 5000, 500000, 0, 10000],
+          backgroundColor: ['#007BFF', '#6610F2', '#DC3545', '#17A2B8', '#28A745', '#FFC107']
+        }]
+      }
+    });
+
+    // 横向条形图：平台接口数量
+    const apiCountCtx = document.getElementById('apiCountByPlatformChart').getContext('2d');
+    new Chart(apiCountCtx, {
+      type: 'bar',
+      data: {
+        labels: ['企查查', '站长之家', '新诺韦尔', '寻程数据', '聚合数据', '用友APILINK'],
+        datasets: [{
+          label: '接口数量',
+          data: [1, 1, 1, 1, 1, 1],
+          backgroundColor: '#007BFF'
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        scales: {
+          x: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    function downloadAsWord() {
+      const doc = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>企业API接口数据分析看板</title>
+          <style>
+            body { font-family: "微软雅黑", Arial, sans-serif; }
+            h1 { color: #007BFF; }
+            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            .positive { color: green; }
+            .negative { color: red; }
+          </style>
+        </head>
+        <body>
+          <h1>企业API接口数据分析看板</h1>
+          <p><strong>分析总结：</strong></p>
+          <p>营运能力：当前提供的企业工商信息查询接口数量为6个，覆盖了主流数据平台如企查查、聚合数据、用友APILINK等，表明市场对这类数据的高需求。</p>
+          <p>盈利能力：接口价格从0元到3900元不等，价格区间较大，适合不同预算的企业用户。部分接口提供免费试用或低价套餐，有助于吸引新客户。</p>
+          <p>关键增长点：接口价格和套餐规模差异明显，说明市场竞争激烈，且有较大的定制化空间。建议关注性价比高的接口（如新诺韦尔）和长期稳定服务的平台（如企查查）。</p>
+          <h2>详细数据表格</h2>
+          <table>
+            <tr>
+              <th>平台</th>
+              <th>接口名称</th>
+              <th>接口价格</th>
+              <th>套餐</th>
+              <th>增长率</th>
+            </tr>
+            <tr>
+              <td>企查查</td>
+              <td>企业工商信息</td>
+              <td>0.20元/次</td>
+              <td>5000次</td>
+              <td class="positive">+10%</td>
+            </tr>
+            <tr>
+              <td>站长之家</td>
+              <td>企业工商信息标准版</td>
+              <td>100元/500次</td>
+              <td>12000次</td>
+              <td class="negative">-5%</td>
+            </tr>
+            <tr>
+              <td>新诺韦尔</td>
+              <td>企业工商信息标准版</td>
+              <td>0元/3次</td>
+              <td>5000次</td>
+              <td class="positive">+15%</td>
+            </tr>
+            <tr>
+              <td>寻程数据</td>
+              <td>企业工商数据查询</td>
+              <td>499元/10000次</td>
+              <td>500000次</td>
+              <td class="positive">+8%</td>
+            </tr>
+            <tr>
+              <td>聚合数据</td>
+              <td>企业工商信息</td>
+              <td>499元/24950次</td>
+              <td>无限制</td>
+              <td class="positive">+12%</td>
+            </tr>
+            <tr>
+              <td>用友APILINK</td>
+              <td>企业工商信息查询【加强版】</td>
+              <td>900元/6000次</td>
+              <td>1万次</td>
+              <td class="positive">+10%</td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([doc], { type: 'application/msword' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = '企业API接口数据分析看板.doc';
+      link.click();
+    }
+  </script>
+</body>
+</html>
