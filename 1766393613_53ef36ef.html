@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业API接口数据分析看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f8;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #007BFF, #00C6FF);
+            color: white;
+            padding: 20px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .download-btn {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            background: #fff;
+            color: #007BFF;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #e6f7ff;
+        }
+
+        .container {
+            padding: 40px 60px;
+            max-width: 1400px;
+            margin: auto;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            flex: 1 1 200px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .kpi-title {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007BFF;
+        }
+
+        .analysis {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+        }
+
+        .analysis h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #007BFF;
+        }
+
+        .analysis p {
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .charts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            flex: 1 1 45%;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow-x: auto;
+            margin-bottom: 40px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .positive {
+            color: green;
+        }
+
+        .negative {
+            color: red;
+        }
+
+        .download-word-btn {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .download-word-btn:hover {
+            background: #0056b3;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-container {
+                flex-direction: column;
+            }
+
+            .chart-container {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>企业API接口数据分析看板</h1>
+    <button class="download-btn" onclick="downloadWord()">一键下载看板</button>
+</header>
+
+<div class="container">
+
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <div class="kpi-title">总接口数量</div>
+            <div class="kpi-value" id="totalApis">6</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">平均价格（元/次）</div>
+            <div class="kpi-value" id="avgPrice">100.00</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">最高单价（元/次）</div>
+            <div class="kpi-value" id="maxPrice">1600.00</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">最低单价（元/次）</div>
+            <div class="kpi-value" id="minPrice">0.00</div>
+        </div>
+    </div>
+
+    <div class="analysis">
+        <h2>文字分析总结</h2>
+        <p><strong>营运能力：</strong>当前提供的API接口种类较为丰富，覆盖了多个平台和数据类型。其中，企查查、新诺韦尔等平台提供免费或低价查询服务，适合中小型企业使用；而用友APILINK等则面向大型企业提供更高级的查询套餐。</p>
+        <p><strong>盈利能力：</strong>从价格来看，部分平台如用友APILINK定价较高，但其数据覆盖范围广且更新及时，具备较高的商业价值。此外，聚合数据和寻程数据提供了不同级别的套餐，便于客户根据需求选择。</p>
+        <p><strong>关键增长点：</strong>随着企业对数据需求的增长，API接口市场潜力巨大。未来可通过优化查询效率、提升数据准确性以及增加更多行业细分接口来增强竞争力。</p>
+    </div>
+
+    <div class="charts">
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="apiTypeChart"></canvas>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>平台</th>
+                <th>接口名称</th>
+                <th>接口价格（元/次）</th>
+                <th>价格类型</th>
+                <th>备注</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>企查查</td>
+                <td>企业工商信息</td>
+                <td>0.20</td>
+                <td>固定</td>
+                <td>需实名认证</td>
+            </tr>
+            <tr>
+                <td>站长之家</td>
+                <td>企业工商信息标准版</td>
+                <td>0.20</td>
+                <td>固定</td>
+                <td>需实名认证</td>
+            </tr>
+            <tr>
+                <td>新诺韦尔</td>
+                <td>企业工商信息标准版</td>
+                <td>0.00</td>
+                <td>按次计费</td>
+                <td>需实名认证</td>
+            </tr>
+            <tr>
+                <td>寻程数据</td>
+                <td>企业工商数据查询</td>
+                <td>0.05</td>
+                <td>按次计费</td>
+                <td>需实名认证</td>
+            </tr>
+            <tr>
+                <td>聚合数据</td>
+                <td>企业工商信息</td>
+                <td>0.05</td>
+                <td>按次计费</td>
+                <td>需实名认证</td>
+            </tr>
+            <tr>
+                <td>用友APILINK</td>
+                <td>企业工商信息查询【加强版】</td>
+                <td>0.15</td>
+                <td>固定</td>
+                <td>需实名认证</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button class="download-word-btn" onclick="downloadWord()">下载为 Word 文档</button>
+
+</div>
+
+<script>
+    const data = [
+        { platform: '企查查', price: 0.20 },
+        { platform: '站长之家', price: 0.20 },
+        { platform: '新诺韦尔', price: 0.00 },
+        { platform: '寻程数据', price: 0.05 },
+        { platform: '聚合数据', price: 0.05 },
+        { platform: '用友APILINK', price: 0.15 }
+    ];
+
+    const totalApis = data.length;
+    const prices = data.map(item => item.price);
+    const avgPrice = (prices.reduce((sum, price) => sum + price, 0) / totalApis).toFixed(2);
+    const maxPrice = Math.max(...prices).toFixed(2);
+    const minPrice = Math.min(...prices).toFixed(2);
+
+    document.getElementById('totalApis').textContent = totalApis;
+    document.getElementById('avgPrice').textContent = avgPrice;
+    document.getElementById('maxPrice').textContent = maxPrice;
+    document.getElementById('minPrice').textContent = minPrice;
+
+    // 价格分布柱状图
+    new Chart(document.getElementById('priceChart'), {
+        type: 'bar',
+        data: {
+            labels: data.map(item => item.platform),
+            datasets: [{
+                label: '接口价格（元/次）',
+                data: data.map(item => item.price),
+                backgroundColor: '#007BFF'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // 接口类型饼图
+    const apiTypes = {};
+    data.forEach(item => {
+        const type = item.platform;
+        if (!apiTypes[type]) apiTypes[type] = 0;
+        apiTypes[type]++;
+    });
+
+    new Chart(document.getElementById('apiTypeChart'), {
+        type: 'pie',
+        data: {
+            labels: Object.keys(apiTypes),
+            datasets: [{
+                label: '接口类型分布',
+                data: Object.values(apiTypes),
+                backgroundColor: ['#007BFF', '#17A2B8', '#28A745', '#DC3545', '#FFC107', '#6610F2']
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+
+    function downloadWord() {
+        const content = `
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>企业API接口数据分析报告</title>
+        </head>
+        <body>
+            <h1 style="color:#007BFF;">企业API接口数据分析报告</h1>
+            <h2 style="color:#007BFF;">KPI 指标</h2>
+            <ul>
+                <li>总接口数量：${totalApis}</li>
+                <li>平均价格（元/次）：${avgPrice}</li>
+                <li>最高单价（元/次）：${maxPrice}</li>
+                <li>最低单价（元/次）：${minPrice}</li>
+            </ul>
+            <h2 style="color:#007BFF;">文字分析总结</h2>
+            <p><strong>营运能力：</strong>当前提供的API接口种类较为丰富，覆盖了多个平台和数据类型。其中，企查查、新诺韦尔等平台提供免费或低价查询服务，适合中小型企业使用；而用友APILINK等则面向大型企业提供更高级的查询套餐。</p>
+            <p><strong>盈利能力：</strong>从价格来看，部分平台如用友APILINK定价较高，但其数据覆盖范围广且更新及时，具备较高的商业价值。此外，聚合数据和寻程数据提供了不同级别的套餐，便于客户根据需求选择。</p>
+            <p><strong>关键增长点：</strong>随着企业对数据需求的增长，API接口市场潜力巨大。未来可通过优化查询效率、提升数据准确性以及增加更多行业细分接口来增强竞争力。</p>
+            <h2 style="color:#007BFF;">接口价格分布</h2>
+            <img src="${document.getElementById('priceChart').toDataURL()}"/>
+            <h2 style="color:#007BFF;">接口类型分布</h2>
+            <img src="${document.getElementById('apiTypeChart').toDataURL()}"/>
+            <h2 style="color:#007BFF;">详细数据表格</h2>
+            <table border="1" style="border-collapse: collapse; width: 100%;">
+                <tr>
+                    <th style="padding: 10px; border: 1px solid #ccc;">平台</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">接口名称</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">接口价格（元/次）</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">价格类型</th>
+                    <th style="padding: 10px; border: 1px solid #ccc;">备注</th>
+                </tr>
+                ${data.map(item => `
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ccc;">${item.platform}</td>
+                        <td style="padding: 10px; border: 1px solid #ccc;">${item.price}</td>
+                        <td style="padding: 10px; border: 1px solid #ccc;">${item.price}</td>
+                        <td style="padding: 10px; border: 1px solid #ccc;">${item.price}</td>
+                        <td style="padding: 10px; border: 1px solid #ccc;">${item.price}</td>
+                    </tr>
+                `).join('')}
+            </table>
+        </body>
+        </html>
+        `;
+
+        const blob = new Blob([content], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '企业API接口数据分析报告.doc';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+</script>
+
+</body>
+</html>
