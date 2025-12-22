@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业API服务数据分析看板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f8;
+            color: #333;
+        }
+        header {
+            background: linear-gradient(135deg, #007BFF, #00C6FF);
+            color: white;
+            padding: 20px 40px;
+            text-align: center;
+            position: relative;
+        }
+        .kpi-container {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+        .kpi-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 200px;
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+        .analysis {
+            padding: 20px;
+            background: white;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 20px;
+            background: white;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background: #f0f0f0;
+        }
+        .positive {
+            color: green;
+        }
+        .negative {
+            color: red;
+        }
+        .chart-container {
+            padding: 20px;
+            background: white;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .download-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .download-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>企业API服务数据分析看板</h1>
+</header>
+
+<div class="kpi-container">
+    <div class="kpi-card">
+        <h3>接口数量</h3>
+        <p id="interfaceCount">6</p>
+    </div>
+    <div class="kpi-card">
+        <h3>价格范围（元/次）</h3>
+        <p id="priceRange">0.05 - 900</p>
+    </div>
+    <div class="kpi-card">
+        <h3>最低价格接口</h3>
+        <p id="lowestPrice">0.05</p>
+    </div>
+    <div class="kpi-card">
+        <h3>最高价格接口</h3>
+        <p id="highestPrice">900</p>
+    </div>
+</div>
+
+<div class="analysis">
+    <h2>文字分析总结</h2>
+    <p><strong>营运能力分析：</strong>当前共有6个企业工商信息查询API接口，覆盖了不同平台和功能需求，如企查查、站长之家、新诺韦尔等。各接口在数据完整性、更新频率、使用限制等方面存在差异。</p>
+    <p><strong>盈利能力分析：</strong>价格从0.05元到900元不等，其中部分接口提供免费试用或低价套餐，适合预算有限的用户。高端接口如用友APILINK价格较高，但功能更全面。</p>
+    <p><strong>关键增长点：</strong>随着企业数据需求的增长，API市场仍有较大发展空间，特别是提供高性价比、实时更新和完整数据的接口将更具竞争力。</p>
+</div>
+
+<div class="chart-container">
+    <canvas id="priceChart"></canvas>
+</div>
+
+<div class="chart-container">
+    <canvas id="apiUsageChart"></canvas>
+</div>
+
+<div class="chart-container">
+    <canvas id="costDistributionChart"></canvas>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>平台</th>
+                <th>接口名称</th>
+                <th>接口价格（元/次）</th>
+                <th>价格类型</th>
+                <th>价格范围</th>
+                <th>备注</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>企查查</td>
+                <td>企业工商信息</td>
+                <td>0.20</td>
+                <td>固定</td>
+                <td>1000.00元/5000次</td>
+                <td>限实名用户</td>
+            </tr>
+            <tr>
+                <td>站长之家</td>
+                <td>企业工商信息标准版</td>
+                <td>0.20</td>
+                <td>固定</td>
+                <td>100元/500次</td>
+                <td>无</td>
+            </tr>
+            <tr>
+                <td>新诺韦尔</td>
+                <td>企业工商信息标准版</td>
+                <td>0.00</td>
+                <td>免费</td>
+                <td>0元/3次</td>
+                <td>ICP20年备案</td>
+            </tr>
+            <tr>
+                <td>寻程数据</td>
+                <td>企业工商数据查询</td>
+                <td>0.05</td>
+                <td>阶梯</td>
+                <td>499元/10000次</td>
+                <td>ICP19年备案</td>
+            </tr>
+            <tr>
+                <td>聚合数据</td>
+                <td>企业工商信息</td>
+                <td>0.05</td>
+                <td>阶梯</td>
+                <td>499元/24950次</td>
+                <td>ICP22年备案</td>
+            </tr>
+            <tr>
+                <td>用友APILINK</td>
+                <td>企业工商信息查询【加强版】</td>
+                <td>0.15</td>
+                <td>固定</td>
+                <td>900元/6000次</td>
+                <td>无</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<button class="download-btn" onclick="downloadAsWord()">下载为 Word 文档</button>
+
+<script>
+    // KPI 数据
+    document.getElementById('interfaceCount').textContent = 6;
+    document.getElementById('priceRange').textContent = "0.05 - 900";
+    document.getElementById('lowestPrice').textContent = "0.05";
+    document.getElementById('highestPrice').textContent = "900";
+
+    // 图表数据
+    const priceData = {
+        labels: ["企查查", "站长之家", "新诺韦尔", "寻程数据", "聚合数据", "用友APILINK"],
+        datasets: [{
+            label: "接口价格（元/次）",
+            data: [0.20, 0.20, 0.00, 0.05, 0.05, 0.15],
+            backgroundColor: "#007BFF"
+        }]
+    };
+
+    const apiUsageData = {
+        labels: ["0.05", "0.15", "0.20", "0.00"],
+        datasets: [{
+            label: "价格区间分布",
+            data: [2, 1, 2, 1],
+            backgroundColor: ["#007BFF", "#28A745", "#FFC107", "#DC3545"]
+        }]
+    };
+
+    const costDistributionData = {
+        labels: ["0.05", "0.15", "0.20", "0.00"],
+        datasets: [{
+            label: "价格区间分布",
+            data: [2, 1, 2, 1],
+            backgroundColor: ["#007BFF", "#28A745", "#FFC107", "#DC3545"]
+        }]
+    };
+
+    // 绘制图表
+    new Chart(document.getElementById('priceChart'), {
+        type: 'bar',
+        data: priceData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                title: {
+                    display: true,
+                    text: '各平台接口价格对比'
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('apiUsageChart'), {
+        type: 'pie',
+        data: apiUsageData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                title: {
+                    display: true,
+                    text: '价格区间分布'
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('costDistributionChart'), {
+        type: 'horizontalBar',
+        data: costDistributionData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                title: {
+                    display: true,
+                    text: '价格区间分布（横向条形图）'
+                }
+            }
+        }
+    });
+
+    function downloadAsWord() {
+        const doc = `
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>企业API服务数据分析看板</title>
+                <style>
+                    body { font-family: Arial, sans-serif; }
+                    h1 { color: #007BFF; }
+                    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+                    .positive { color: green; }
+                    .negative { color: red; }
+                </style>
+            </head>
+            <body>
+                <h1>企业API服务数据分析看板</h1>
+                <h2>KPI 指标卡片</h2>
+                <ul>
+                    <li>接口数量: 6</li>
+                    <li>价格范围: 0.05 - 900 元/次</li>
+                    <li>最低价格接口: 0.05 元/次</li>
+                    <li>最高价格接口: 900 元/次</li>
+                </ul>
+                <h2>文字分析总结</h2>
+                <p><strong>营运能力分析：</strong>当前共有6个企业工商信息查询API接口，覆盖了不同平台和功能需求，如企查查、站长之家、新诺韦尔等。各接口在数据完整性、更新频率、使用限制等方面存在差异。</p>
+                <p><strong>盈利能力分析：</strong>价格从0.05元到900元不等，其中部分接口提供免费试用或低价套餐，适合预算有限的用户。高端接口如用友APILINK价格较高，但功能更全面。</p>
+                <p><strong>关键增长点：</strong>随着企业数据需求的增长，API市场仍有较大发展空间，特别是提供高性价比、实时更新和完整数据的接口将更具竞争力。</p>
+                <h2>详细数据表格</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>平台</th>
+                            <th>接口名称</th>
+                            <th>接口价格（元/次）</th>
+                            <th>价格类型</th>
+                            <th>价格范围</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>企查查</td>
+                            <td>企业工商信息</td>
+                            <td>0.20</td>
+                            <td>固定</td>
+                            <td>1000.00元/5000次</td>
+                            <td>限实名用户</td>
+                        </tr>
+                        <tr>
+                            <td>站长之家</td>
+                            <td>企业工商信息标准版</td>
+                            <td>0.20</td>
+                            <td>固定</td>
+                            <td>100元/500次</td>
+                            <td>无</td>
+                        </tr>
+                        <tr>
+                            <td>新诺韦尔</td>
+                            <td>企业工商信息标准版</td>
+                            <td>0.00</td>
+                            <td>免费</td>
+                            <td>0元/3次</td>
+                            <td>ICP20年备案</td>
+                        </tr>
+                        <tr>
+                            <td>寻程数据</td>
+                            <td>企业工商数据查询</td>
+                            <td>0.05</td>
+                            <td>阶梯</td>
+                            <td>499元/10000次</td>
+                            <td>ICP19年备案</td>
+                        </tr>
+                        <tr>
+                            <td>聚合数据</td>
+                            <td>企业工商信息</td>
+                            <td>0.05</td>
+                            <td>阶梯</td>
+                            <td>499元/24950次</td>
+                            <td>ICP22年备案</td>
+                        </tr>
+                        <tr>
+                            <td>用友APILINK</td>
+                            <td>企业工商信息查询【加强版】</td>
+                            <td>0.15</td>
+                            <td>固定</td>
+                            <td>900元/6000次</td>
+                            <td>无</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h2>图表说明</h2>
+                <p>1. 各平台接口价格对比：展示了不同平台的接口价格。</p>
+                <p>2. 价格区间分布：以饼图形式展示不同价格区间的接口数量。</p>
+                <p>3. 价格区间分布（横向条形图）：以横向条形图形式展示不同价格区间的接口数量。</p>
+            </body>
+            </html>
+        `;
+
+        const blob = new Blob([doc], { type: "application/msword" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "企业API服务数据分析看板.doc";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+</body>
+</html>
