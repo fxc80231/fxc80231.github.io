@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>企业接口数据分析看板</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      color: #333;
+    }
+    header {
+      background: linear-gradient(135deg, #2c3e50, #3498db);
+      color: white;
+      padding: 20px 40px;
+      text-align: center;
+      position: relative;
+    }
+    .kpi-container {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      padding: 20px;
+      background: #fff;
+      margin: 20px auto;
+      max-width: 1200px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .kpi-card {
+      background: #ecf0f1;
+      padding: 20px;
+      border-radius: 10px;
+      width: 220px;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+    .kpi-card:hover {
+      transform: scale(1.05);
+    }
+    .kpi-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.2em;
+    }
+    .kpi-card p {
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    .analysis {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .analysis h2 {
+      margin-top: 0;
+    }
+    .charts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .chart-container {
+      width: 48%;
+      min-width: 300px;
+      margin: 10px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      max-height: 400px;
+      overflow-y: auto;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #3498db;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .positive {
+      color: green;
+    }
+    .negative {
+      color: red;
+    }
+    .download-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 1000;
+      font-size: 16px;
+    }
+    .download-btn:hover {
+      background: #2980b9;
+    }
+    @media (max-width: 768px) {
+      .chart-container {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>企业接口数据分析看板</h1>
+</header>
+
+<div class="kpi-container">
+  <div class="kpi-card">
+    <h3>总接口数量</h3>
+    <p id="totalApis">6</p>
+  </div>
+  <div class="kpi-card">
+    <h3>免费接口数量</h3>
+    <p id="freeApis">1</p>
+  </div>
+  <div class="kpi-card">
+    <h3>付费接口数量</h3>
+    <p id="paidApis">5</p>
+  </div>
+  <div class="kpi-card">
+    <h3>最低价格接口</h3>
+    <p id="lowestPrice">0.05 元/次</p>
+  </div>
+  <div class="kpi-card">
+    <h3>最高价格接口</h3>
+    <p id="highestPrice">1000 元/次</p>
+  </div>
+</div>
+
+<div class="analysis">
+  <h2>文字分析总结</h2>
+  <p><strong>营运能力：</strong>接口价格差异较大，从免费到高价不等，建议根据业务需求选择性价比高的接口。</p>
+  <p><strong>盈利能力：</strong>部分接口提供高单价服务，但需注意使用频率和成本控制。</p>
+  <p><strong>关键增长点：</strong>企查查、用友APILINK等接口具有较高的市场占有率，适合长期合作。</p>
+</div>
+
+<div class="charts">
+  <div class="chart-container">
+    <canvas id="priceChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="costChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="apiTypeChart"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="usageChart"></canvas>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>平台</th>
+      <th>接口名称</th>
+      <th>接口价格</th>
+      <th>单价（元/次）</th>
+      <th>价格类型</th>
+      <th>备注</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>企查查</td>
+      <td>企业工商信息</td>
+      <td>0.20元/次 固定次数1,000.00元/5000次</td>
+      <td>0.04</td>
+      <td>付费</td>
+      <td>限实名用户</td>
+    </tr>
+    <tr>
+      <td>站长之家</td>
+      <td>企业工商信息标准版</td>
+      <td>100元/500次</td>
+      <td>0.20</td>
+      <td>付费</td>
+      <td>一年有效期</td>
+    </tr>
+    <tr>
+      <td>新诺韦尔</td>
+      <td>企业工商信息标准版</td>
+      <td>0元/3次 3元/20次</td>
+      <td>0.15</td>
+      <td>付费</td>
+      <td>无时间限制</td>
+    </tr>
+    <tr>
+      <td>寻程数据</td>
+      <td>企业工商数据查询</td>
+      <td>LV.1 ￥499 10000次</td>
+      <td>0.05</td>
+      <td>付费</td>
+      <td>无时间限制</td>
+    </tr>
+    <tr>
+      <td>聚合数据</td>
+      <td>企业工商信息</td>
+      <td>新客户首购特惠 499元 24950次</td>
+      <td>0.02</td>
+      <td>付费</td>
+      <td>无时间限制</td>
+    </tr>
+    <tr>
+      <td>用友APILINK</td>
+      <td>企业工商信息查询【加强版】</td>
+      <td>￥900 6000次</td>
+      <td>0.15</td>
+      <td>付费</td>
+      <td>有效期1年</td>
+    </tr>
+  </tbody>
+</table>
+
+<button class="download-btn" onclick="downloadWord()">一键下载看板</button>
+
+<script>
+  // 计算KPI
+  const totalApis = document.getElementById('totalApis');
+  const freeApis = document.getElementById('freeApis');
+  const paidApis = document.getElementById('paidApis');
+  const lowestPrice = document.getElementById('lowestPrice');
+  const highestPrice = document.getElementById('highestPrice');
+
+  const apiData = [
+    { platform: "企查查", price: "0.20元/次 固定次数1,000.00元/5000次", type: "付费" },
+    { platform: "站长之家", price: "100元/500次", type: "付费" },
+    { platform: "新诺韦尔", price: "0元/3次 3元/20次", type: "付费" },
+    { platform: "寻程数据", price: "LV.1 ￥499 10000次", type: "付费" },
+    { platform: "聚合数据", price: "新客户首购特惠 499元 24950次", type: "付费" },
+    { platform: "用友APILINK", price: "￥900 6000次", type: "付费" }
+  ];
+
+  let freeCount = 0;
+  let paidCount = 0;
+  let prices = [];
+
+  apiData.forEach(item => {
+    if (item.type === "付费") {
+      paidCount++;
+    } else {
+      freeCount++;
+    }
+
+    const priceStr = item.price.split(" ")[0];
+    const priceNum = parseFloat(priceStr.replace(/[^0-9.]/g, ""));
+    prices.push(priceNum);
+  });
+
+  totalApis.textContent = apiData.length;
+  freeApis.textContent = freeCount;
+  paidApis.textContent = paidCount;
+  lowestPrice.textContent = Math.min(...prices).toFixed(2) + " 元/次";
+  highestPrice.textContent = Math.max(...prices).toFixed(2) + " 元/次";
+
+  // 绘制图表
+  const ctx1 = document.getElementById('priceChart').getContext('2d');
+  new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: apiData.map(item => item.platform),
+      datasets: [{
+        label: '接口价格（元/次）',
+        data: prices,
+        backgroundColor: '#3498db'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  const ctx2 = document.getElementById('costChart').getContext('2d');
+  new Chart(ctx2, {
+    type: 'pie',
+    data: {
+      labels: ['付费接口', '免费接口'],
+      datasets: [{
+        label: '接口类型分布',
+        data: [paidCount, freeCount],
+        backgroundColor: ['#3498db', '#2ecc71']
+      }]
+    }
+  });
+
+  const ctx3 = document.getElementById('apiTypeChart').getContext('2d');
+  new Chart(ctx3, {
+    type: 'horizontalBar',
+    data: {
+      labels: ['企查查', '站长之家', '新诺韦尔', '寻程数据', '聚合数据', '用友APILINK'],
+      datasets: [{
+        label: '接口单价（元/次）',
+        data: prices,
+        backgroundColor: '#3498db'
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      scales: {
+        x: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  const ctx4 = document.getElementById('usageChart').getContext('2d');
+  new Chart(ctx4, {
+    type: 'line',
+    data: {
+      labels: ['企查查', '站长之家', '新诺韦尔', '寻程数据', '聚合数据', '用友APILINK'],
+      datasets: [{
+        label: '接口单价（元/次）',
+        data: prices,
+        borderColor: '#3498db',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  function downloadWord() {
+    const doc = new Blob(['<html><body><h1>企业接口数据分析看板</h1><p><strong>总接口数量:</strong> 6</p><p><strong>免费接口数量:</strong> 1</p><p><strong>付费接口数量:</strong> 5</p><p><strong>最低价格接口:</strong> 0.02 元/次</p><p><strong>最高价格接口:</strong> 0.20 元/次</p><h2>文字分析总结</h2><p><strong>营运能力：</strong>接口价格差异较大，从免费到高价不等，建议根据业务需求选择性价比高的接口。</p><p><strong>盈利能力：</strong>部分接口提供高单价服务，但需注意使用频率和成本控制。</p><p><strong>关键增长点：</strong>企查查、用友APILINK等接口具有较高的市场占有率，适合长期合作。</p><h2>详细数据表格</h2><table border="1"><thead><tr><th>平台</th><th>接口名称</th><th>接口价格</th><th>单价（元/次）</th><th>价格类型</th><th>备注</th></tr></thead><tbody><tr><td>企查查</td><td>企业工商信息</td><td>0.20元/次 固定次数1,000.00元/5000次</td><td>0.04</td><td>付费</td><td>限实名用户</td></tr><tr><td>站长之家</td><td>企业工商信息标准版</td><td>100元/500次</td><td>0.20</td><td>付费</td><td>一年有效期</td></tr><tr><td>新诺韦尔</td><td>企业工商信息标准版</td><td>0元/3次 3元/20次</td><td>0.15</td><td>付费</td><td>无时间限制</td></tr><tr><td>寻程数据</td><td>企业工商数据查询</td><td>LV.1 ￥499 10000次</td><td>0.05</td><td>付费</td><td>无时间限制</td></tr><tr><td>聚合数据</td><td>企业工商信息</td><td>新客户首购特惠 499元 24950次</td><td>0.02</td><td>付费</td><td>无时间限制</td></tr><tr><td>用友APILINK</td><td>企业工商信息查询【加强版】</td><td>￥900 6000次</td><td>0.15</td><td>付费</td><td>有效期1年</td></tr></tbody></table></body></html>'], { type: 'application/msword' });
+    const url = URL.createObjectURL(doc);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '企业接口数据分析看板.doc';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+</body>
+</html>
