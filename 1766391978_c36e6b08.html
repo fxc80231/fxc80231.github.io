@@ -1,0 +1,537 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>企业项目任务与成本数据分析看板</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f6f8;
+      color: #333;
+    }
+
+    .header {
+      background: linear-gradient(90deg, #2c3e50, #3498db);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1400px;
+      margin: auto;
+    }
+
+    .kpi-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: inline-block;
+      width: 100%;
+      max-width: 280px;
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .kpi-card:hover {
+      transform: scale(1.03);
+    }
+
+    .kpi-title {
+      font-size: 16px;
+      color: #555;
+    }
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .charts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .chart-box {
+      width: 48%;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+
+    .analysis {
+      margin-top: 30px;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .analysis h3 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+
+    .analysis p {
+      line-height: 1.6;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #3498db;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .positive {
+      color: green;
+    }
+
+    .negative {
+      color: red;
+    }
+
+    .button-container {
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    .download-btn {
+      background-color: #3498db;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .download-btn:hover {
+      background-color: #2980b9;
+    }
+
+    .floating-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #e74c3c;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      z-index: 1000;
+      transition: background 0.3s ease;
+    }
+
+    .floating-btn:hover {
+      background-color: #c0392b;
+    }
+
+    @media (max-width: 768px) {
+      .kpi-card {
+        max-width: 100%;
+      }
+
+      .chart-box {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    企业项目任务与成本数据分析看板
+  </div>
+
+  <div class="floating-btn" onclick="downloadFullPage()">一键下载看板</div>
+
+  <div class="container">
+    <!-- KPI 卡片 -->
+    <div class="kpi-card">
+      <div class="kpi-title">总耗时（小时）</div>
+      <div class="kpi-value">72</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">总费用（元）</div>
+      <div class="kpi-value">19600</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">平均任务耗时（小时）</div>
+      <div class="kpi-value">10.3</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">平均任务费用（元）</div>
+      <div class="kpi-value">2800</div>
+    </div>
+
+    <!-- 图表 -->
+    <div class="charts">
+      <div class="chart-box">
+        <h3>任务费用分布（饼图）</h3>
+        <canvas id="costPieChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>任务耗时分布（柱状图）</h3>
+        <canvas id="hoursBarChart"></canvas>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-box">
+        <h3>费用与耗时关系（折线图）</h3>
+        <canvas id="costVsHoursLineChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>任务费用排名（横向条形图）</h3>
+        <canvas id="costBarHorizontalChart"></canvas>
+      </div>
+    </div>
+
+    <!-- 分析总结 -->
+    <div class="analysis">
+      <h3>数据分析总结</h3>
+      <p>从任务耗时与费用分析，任务“退款处理”耗时最长（20小时），费用最高（5000元），是项目中最耗资源的环节。而“基础信息同步”耗时最少，费用适中，表明其技术复杂度较低。</p>
+      <p>在费用分布中，退款处理（5000元）和合同收款及收入结转（3000元）占比较大，合计占比超过40%，是主要成本支出点。</p>
+      <p>整体来看，费用与耗时呈现正相关，但部分任务如“佣金处理”和“费用报销处理”耗时一致，但费用相同，说明开发资源分配相对均匀。</p>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>序号</th>
+            <th>任务阶段</th>
+            <th>任务内容</th>
+            <th>负责人</th>
+            <th>耗时（小时）</th>
+            <th>费用（元）</th>
+            <th>同比费用（元）</th>
+            <th>费用增长率（%）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>基础信息同步</td>
+            <td>同步金蝶系统中会计科目及辅助核算维度、客户名称和编号、项目分类和编号、部门名称和编号</td>
+            <td>开发工程师</td>
+            <td>4</td>
+            <td>1000</td>
+            <td>0</td>
+            <td class="positive">100%</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>合同收款及收入结转</td>
+            <td>根据审批后的合同收款自动生成收款凭证；根据阿米巴明细表数据进行收入结转</td>
+            <td>开发工程师</td>
+            <td>12</td>
+            <td>3000</td>
+            <td>0</td>
+            <td class="positive">100%</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>成本处理</td>
+            <td>根据阿米巴明细表成本金额进行成本结转；同步更新成本申请订单；支出时生成支付凭证</td>
+            <td>开发工程师</td>
+            <td>12</td>
+            <td>3000</td>
+            <td>0</td>
+            <td class="positive">100%</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>佣金处理</td>
+            <td>根据阿米巴明细表佣金金额进行佣金结转；同步更新佣金申请订单；支出时生成支付凭证</td>
+            <td>开发工程师</td>
+            <td>12</td>
+            <td>3000</td>
+            <td>0</td>
+            <td class="positive">100%</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>费用报销处理</td>
+            <td>新增部门人数表格并自动分摊费用；根据报销单据生成支付凭证</td>
+            <td>开发工程师</td>
+            <td>12</td>
+            <td>3000</td>
+            <td>0</td>
+            <td class="positive">100%</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>退款处理</td>
+            <td>根据退款申请单生成退款凭证（直接退款/转入其他合同）</td>
+            <td>开发工程师</td>
+            <td>20</td>
+            <td>5000</td>
+            <td>0</td>
+            <td class="positive">100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 下载 Word 按钮 -->
+    <div class="button-container">
+      <button class="download-btn" onclick="downloadAsWord()">下载为 Word 文档</button>
+    </div>
+  </div>
+
+  <script>
+    // 图表数据准备
+    const taskNames = [
+      "基础信息同步",
+      "合同收款及收入结转",
+      "成本处理",
+      "佣金处理",
+      "费用报销处理",
+      "退款处理"
+    ];
+
+    const taskHours = [4, 12, 12, 12, 12, 20];
+    const taskCosts = [1000, 3000, 3000, 3000, 3000, 5000];
+
+    // 饼图 - 任务费用分布
+    const costPieChart = new Chart(document.getElementById('costPieChart'), {
+      type: 'pie',
+      data: {
+        labels: taskNames,
+        datasets: [{
+          label: '费用分布',
+          data: taskCosts,
+          backgroundColor: [
+            '#3498db',
+            '#2ecc71',
+            '#e74c3c',
+            '#f1c40f',
+            '#9b59b6',
+            '#1abc9c'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'right',
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                label += context.parsed + ' 元';
+                return label;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 柱状图 - 任务耗时分布
+    const hoursBarChart = new Chart(document.getElementById('hoursBarChart'), {
+      type: 'bar',
+      data: {
+        labels: taskNames,
+        datasets: [{
+          label: '耗时（小时）',
+          data: taskHours,
+          backgroundColor: '#3498db'
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        scales: {
+          x: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: '耗时（小时）'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: '任务名称'
+            }
+          }
+        }
+      }
+    });
+
+    // 折线图 - 费用与耗时关系
+    const costVsHoursLineChart = new Chart(document.getElementById('costVsHoursLineChart'), {
+      type: 'line',
+      data: {
+        labels: taskNames,
+        datasets: [
+          {
+            label: '费用（元）',
+            data: taskCosts,
+            borderColor: '#e74c3c',
+            fill: false
+          },
+          {
+            label: '耗时（小时）',
+            data: taskHours,
+            borderColor: '#2ecc71',
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                label += context.parsed.y;
+                return label;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 横向条形图 - 任务费用排名
+    const costBarHorizontalChart = new Chart(document.getElementById('costBarHorizontalChart'), {
+      type: 'bar',
+      data: {
+        labels: taskNames,
+        datasets: [{
+          label: '费用（元）',
+          data: taskCosts,
+          backgroundColor: '#3498db'
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        scales: {
+          x: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: '费用（元）'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: '任务名称'
+            }
+          }
+        }
+      }
+    });
+
+    // 下载 Word 文档
+    function downloadAsWord() {
+      const content = document.body.innerHTML;
+      const wordContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset='UTF-8'>
+          <title>企业项目任务与成本数据分析看板</title>
+        </head>
+        <body>
+          <h1>企业项目任务与成本数据分析看板</h1>
+          <h2>关键指标</h2>
+          <ul>
+            <li>总耗时（小时）：72</li>
+            <li>总费用（元）：19600</li>
+            <li>平均任务耗时（小时）：10.3</li>
+            <li>平均任务费用（元）：2800</li>
+          </ul>
+          <h2>数据分析总结</h2>
+          <p>从任务耗时与费用分析，任务“退款处理”耗时最长（20小时），费用最高（5000元），是项目中最耗资源的环节。而“基础信息同步”耗时最少，费用适中，表明其技术复杂度较低。</p>
+          <p>在费用分布中，退款处理（5000元）和合同收款及收入结转（3000元）占比较大，合计占比超过40%，是主要成本支出点。</p>
+          <p>整体来看，费用与耗时呈现正相关，但部分任务如“佣金处理”和“费用报销处理”耗时一致，但费用相同，说明开发资源分配相对均匀。</p>
+          <h2>详细数据表格</h2>
+          <table border="1" style="width:100%; border-collapse: collapse;">
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>任务阶段</th>
+                <th>任务内容</th>
+                <th>负责人</th>
+                <th>耗时（小时）</th>
+                <th>费用（元）</th>
+                <th>同比费用（元）</th>
+                <th>费用增长率（%）</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>基础信息同步</td>
+                <td>同步金蝶系统中会计科目及辅助核算维度、客户名称和编号、项目分类和编号、部门名称和编号</td>
+                <td>开发工程师</td>
+                <td>4</td>
+                <td>1000</td>
+                <td>0</td>
+                <td>100%</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>合同收款及收入结转</td>
+                <td>根据审批后的合同收款自动生成收款凭证；根据阿米巴明细表数据进行收入结转</td>
+                <td>开发工程师</td>
+                <td>
