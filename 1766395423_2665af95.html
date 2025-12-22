@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>企业员工信息数据分析看板</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+    body {
+      background: #f5f7fa;
+      color: #333;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #007BFF;
+    }
+    .dashboard {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .kpi-container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .kpi-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      flex: 1 1 200px;
+      text-align: center;
+    }
+    .kpi-card h3 {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .kpi-card p {
+      font-size: 24px;
+      font-weight: bold;
+      color: #007BFF;
+    }
+    .analysis {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 30px;
+    }
+    .analysis h2 {
+      margin-bottom: 15px;
+      color: #007BFF;
+    }
+    .analysis p {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .charts-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .chart-wrapper {
+      flex: 1 1 45%;
+      min-width: 300px;
+    }
+    canvas {
+      background: #fff;
+      border-radius: 10px;
+    }
+    .table-container {
+      overflow-x: auto;
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #007BFF;
+      color: #fff;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .positive {
+      color: green;
+    }
+    .negative {
+      color: red;
+    }
+    .download-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #007BFF;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      z-index: 1000;
+    }
+    .download-btn:hover {
+      background: #0056b3;
+    }
+    @media (max-width: 768px) {
+      .kpi-container {
+        flex-direction: column;
+      }
+      .chart-wrapper {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h1>企业员工信息数据分析看板</h1>
+    <div class="kpi-container">
+      <div class="kpi-card">
+        <h3>总员工数</h3>
+        <p id="totalEmployees">7</p>
+      </div>
+      <div class="kpi-card">
+        <h3>最早入职时间</h3>
+        <p id="oldestJoinDate">2017-11-01</p>
+      </div>
+      <div class="kpi-card">
+        <h3>最近入职时间</h3>
+        <p id="newestJoinDate">2022-05-16</p>
+      </div>
+    </div>
+    <div class="analysis">
+      <h2>文字分析总结</h2>
+      <p>本数据集包含7位员工的信息，涵盖不同门店的入职日期。从入职时间来看，最早入职的是秦凡（2017年11月），最晚的是龙刚强（2022年5月）。整体来看，员工分布较为分散，覆盖多个区域门店。</p>
+      <p>员工的入职时间跨度较大，说明公司运营时间较长，且在不同时间段持续招聘新员工。建议进一步分析各门店的人员结构和稳定性，以优化人力资源配置。</p>
+    </div>
+    <div class="charts-container">
+      <div class="chart-wrapper">
+        <canvas id="departmentChart"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="joinYearChart"></canvas>
+      </div>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>门店</th>
+            <th>入职日期</th>
+          </tr>
+        </thead>
+        <tbody id="dataTable">
+          <!-- 数据由 JavaScript 填充 -->
+        </tbody>
+      </table>
+    </div>
+    <button class="download-btn" onclick="downloadAsWord()">一键下载看板</button>
+  </div>
+
+  <script>
+    const data = [
+      { name: "艾莹", store: "东西湖田园街店", joinDate: "2021-06-17" },
+      { name: "严大鹏", store: "光谷店", joinDate: "2020-04-22" },
+      { name: "王俊", store: "黄陂前川店", joinDate: "2018-05-15" },
+      { name: "吴恒旭", store: "江岸黄孝河路店", joinDate: "2022-02-18" },
+      { name: "秦凡", store: "江汉香港路店", joinDate: "2017-11-01" },
+      { name: "龙刚强", store: "硚口店", joinDate: "2022-05-16" },
+      { name: "陆林", store: "青山建设三路店", joinDate: "2021-04-12" }
+    ];
+
+    // KPI 显示
+    document.getElementById("totalEmployees").textContent = data.length;
+    document.getElementById("oldestJoinDate").textContent = new Date(data.reduce((a, b) => a.joinDate < b.joinDate ? a : b).joinDate).toLocaleDateString();
+    document.getElementById("newestJoinDate").textContent = new Date(data.reduce((a, b) => a.joinDate > b.joinDate ? a : b).joinDate).toLocaleDateString();
+
+    // 表格填充
+    const tableBody = document.getElementById("dataTable");
+    data.forEach(item => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${item.name}</td>
+        <td>${item.store}</td>
+        <td>${item.joinDate}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+    // 部门分布图表
+    const departmentCounts = {};
+    data.forEach(item => {
+      if (!departmentCounts[item.store]) departmentCounts[item.store] = 0;
+      departmentCounts[item.store]++;
+    });
+    const departments = Object.keys(departmentCounts);
+    const counts = Object.values(departmentCounts);
+
+    new Chart(document.getElementById("departmentChart"), {
+      type: "bar",
+      data: {
+        labels: departments,
+        datasets: [{
+          label: "门店人数",
+          data: counts,
+          backgroundColor: "#007BFF"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: "各门店员工数量分布" }
+        }
+      }
+    });
+
+    // 入职年份统计
+    const yearCounts = {};
+    data.forEach(item => {
+      const year = item.joinDate.split("-")[0];
+      if (!yearCounts[year]) yearCounts[year] = 0;
+      yearCounts[year]++;
+    });
+    const years = Object.keys(yearCounts);
+    const yearValues = Object.values(yearCounts);
+
+    new Chart(document.getElementById("joinYearChart"), {
+      type: "pie",
+      data: {
+        labels: years,
+        datasets: [{
+          label: "按年份入职人数",
+          data: yearValues,
+          backgroundColor: ["#007BFF", "#6C757D", "#17A2B8", "#DC3545"]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: { display: true, text: "员工入职年份分布" }
+        }
+      }
+    });
+
+    function downloadAsWord() {
+      const blob = new Blob([`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>企业员工信息数据分析看板 - Word导出</title>
+          <style>
+            body { font-family: "Microsoft YaHei", sans-serif; }
+            h1 { color: #007BFF; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+            th { background: #007BFF; color: white; }
+          </style>
+        </head>
+        <body>
+          <h1>企业员工信息数据分析看板</h1>
+          <p><strong>总员工数:</strong> ${data.length}</p>
+          <p><strong>最早入职时间:</strong> ${new Date(data.reduce((a, b) => a.joinDate < b.joinDate ? a : b).joinDate).toLocaleDateString()}</p>
+          <p><strong>最近入职时间:</strong> ${new Date(data.reduce((a, b) => a.joinDate > b.joinDate ? a : b).joinDate).toLocaleDateString()}</p>
+          <h2>文字分析总结</h2>
+          <p>本数据集包含${data.length}位员工的信息，涵盖不同门店的入职日期。从入职时间来看，最早入职的是秦凡（2017年11月），最晚的是龙刚强（2022年5月）。整体来看，员工分布较为分散，覆盖多个区域门店。</p>
+          <p>员工的入职时间跨度较大，说明公司运营时间较长，且在不同时间段持续招聘新员工。建议进一步分析各门店的人员结构和稳定性，以优化人力资源配置。</p>
+          <h2>图表说明</h2>
+          <p><strong>各门店员工数量分布:</strong> 展示了每个门店的员工人数。</p>
+          <p><strong>员工入职年份分布:</strong> 展示了员工在不同年份的入职情况。</p>
+          <h2>详细数据表格</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>姓名</th>
+                <th>门店</th>
+                <th>入职日期</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.store}</td>
+                  <td>${item.joinDate}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "企业员工信息数据分析看板.html";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
