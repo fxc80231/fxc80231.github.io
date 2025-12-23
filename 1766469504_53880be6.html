@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业合同数据分析看板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #007BFF, #00C6FF);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .kpi-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: calc(25% - 20px);
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: scale(1.02);
+        }
+
+        .kpi-title {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .kpi-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .analysis {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .analysis h2 {
+            margin-top: 0;
+            color: #007BFF;
+        }
+
+        .chart-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .chart-wrapper {
+            width: 48%;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 300px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .positive {
+            color: green;
+        }
+
+        .negative {
+            color: red;
+        }
+
+        .download-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .download-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <header>企业合同数据分析看板</header>
+    <div class="container">
+        <div class="kpi-container">
+            <div class="kpi-card">
+                <div class="kpi-title">合同金额（11月）</div>
+                <div class="kpi-value">9,675,523.94</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">合同利润（11月）</div>
+                <div class="kpi-value">7,496,623.32</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">平均单价（11月）</div>
+                <div class="kpi-value">5,577.84</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">单数（11月）</div>
+                <div class="kpi-value">1,344</div>
+            </div>
+        </div>
+
+        <div class="analysis">
+            <h2>文字分析总结</h2>
+            <p><strong>营运能力：</strong>11月总业务量为1,344单，环比增长显著，说明业务拓展效果良好。</p>
+            <p><strong>盈利能力：</strong>合同毛利达到7,496,623.32元，毛利率为77.48%，显示公司盈利能力较强。</p>
+            <p><strong>关键增长点：</strong>营销部和全民营销是主要增长来源，分别贡献了376万和246万的合同金额。</p>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="pieChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="lineChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="horizontalBarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>信息来源</th>
+                        <th>11月单数</th>
+                        <th>10月单数</th>
+                        <th>环比变化</th>
+                        <th>11月合同金额</th>
+                        <th>10月合同金额</th>
+                        <th>环比变化</th>
+                        <th>11月平均单价</th>
+                        <th>10月平均单价</th>
+                        <th>环比变化</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>招商加盟部</td>
+                        <td>7</td>
+                        <td>6</td>
+                        <td class="positive">+16.67%</td>
+                        <td>208,600.00</td>
+                        <td>127,200.00</td>
+                        <td class="positive">+64.00%</td>
+                        <td>29,800.00</td>
+                        <td>21,200.00</td>
+                        <td class="positive">+40.57%</td>
+                    </tr>
+                    <tr>
+                        <td>营销部</td>
+                        <td>523</td>
+                        <td>505</td>
+                        <td class="positive">+3.56%</td>
+                        <td>3,761,089.38</td>
+                        <td>3,102,411.28</td>
+                        <td class="positive">+21.24%</td>
+                        <td>7,191.03</td>
+                        <td>6,143.41</td>
+                        <td class="positive">+17.07%</td>
+                    </tr>
+                    <tr>
+                        <td>新媒体</td>
+                        <td>117</td>
+                        <td>127</td>
+                        <td class="negative">-7.87%</td>
+                        <td>283,131.98</td>
+                        <td>115,018.21</td>
+                        <td class="positive">+146.15%</td>
+                        <td>2,420.00</td>
+                        <td>905.65</td>
+                        <td class="positive">+167.23%</td>
+                    </tr>
+                    <tr>
+                        <td>全民营销</td>
+                        <td>417</td>
+                        <td>352</td>
+                        <td class="positive">+18.46%</td>
+                        <td>2,467,254.96</td>
+                        <td>2,176,385.60</td>
+                        <td class="positive">+13.36%</td>
+                        <td>5,919.08</td>
+                        <td>6,183.00</td>
+                        <td class="negative">-4.27%</td>
+                    </tr>
+                    <tr>
+                        <td>门店业务</td>
+                        <td>145</td>
+                        <td>116</td>
+                        <td class="positive">+24.14%</td>
+                        <td>465,502.00</td>
+                        <td>506,196.00</td>
+                        <td class="negative">-8.04%</td>
+                        <td>3,210.36</td>
+                        <td>4,363.76</td>
+                        <td class="negative">-26.43%</td>
+                    </tr>
+                    <tr>
+                        <td>交付中心</td>
+                        <td>10</td>
+                        <td>7</td>
+                        <td class="positive">+42.86%</td>
+                        <td>1,045,070.00</td>
+                        <td>298,100.00</td>
+                        <td class="positive">+250.56%</td>
+                        <td>104,507.00</td>
+                        <td>42,585.71</td>
+                        <td class="positive">+145.43%</td>
+                    </tr>
+                    <tr>
+                        <td>加盟商</td>
+                        <td>8</td>
+                        <td>7</td>
+                        <td class="positive">+14.29%</td>
+                        <td>210,300.00</td>
+                        <td>123,780.00</td>
+                        <td class="positive">+69.90%</td>
+                        <td>26,287.50</td>
+                        <td>17,682.86</td>
+                        <td class="positive">+48.70%</td>
+                    </tr>
+                    <tr>
+                        <td>会销部</td>
+                        <td>103</td>
+                        <td>48</td>
+                        <td class="positive">+114.58%</td>
+                        <td>1,157,117.04</td>
+                        <td>710,466.58</td>
+                        <td class="positive">+62.87%</td>
+                        <td>11,233.18</td>
+                        <td>14,801.39</td>
+                        <td class="negative">-24.10%</td>
+                    </tr>
+                    <tr>
+                        <td>合道市场部</td>
+                        <td>8</td>
+                        <td>17</td>
+                        <td class="negative">-52.94%</td>
+                        <td>55,730.00</td>
+                        <td>120,300.00</td>
+                        <td class="negative">-53.68%</td>
+                        <td>6,966.25</td>
+                        <td>7,076.47</td>
+                        <td class="negative">-1.56%</td>
+                    </tr>
+                    <tr>
+                        <td>城市合伙人</td>
+                        <td>6</td>
+                        <td>10</td>
+                        <td class="negative">-40.00%</td>
+                        <td>21,728.58</td>
+                        <td>69,688.61</td>
+                        <td class="negative">-68.85%</td>
+                        <td>3,621.43</td>
+                        <td>6,968.86</td>
+                        <td class="negative">-48.06%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <button class="download-btn" onclick="downloadAsWord()">一键下载看板</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        const barChart = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['招商加盟部', '营销部', '新媒体', '全民营销', '门店业务', '交付中心', '加盟商', '会销部', '合道市场部', '城市合伙人'],
+                datasets: [{
+                    label: '11月合同金额 (元)',
+                    data: [208600, 3761089.38, 283131.98, 2467254.96, 465502, 1045070, 210300, 1157117.04, 55730, 21728.58],
+                    backgroundColor: '#007BFF'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        const pieChart = new Chart(ctxPie, {
+            type: 'pie',
+            data: {
+                labels: ['招商加盟部', '营销部', '新媒体', '全民营销', '门店业务', '交付中心', '加盟商', '会销部', '合道市场部', '城市合伙人'],
+                datasets: [{
+                    label: '11月合同金额占比',
+                    data: [208600, 3761089.38, 283131.98, 2467254.96, 465502, 1045070, 210300, 1157117.04, 55730, 21728.58],
+                    backgroundColor: [
+                        '#007BFF', '#6610F2', '#DC3545', '#17A2B8', '#28A745', '#FFC107', '#007BFF', '#6610F2', '#DC3545', '#17A2B8'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + ' 元 (' + ((context.parsed / 9675523.94) * 100).toFixed(2) + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const ctxLine = document.getElementById('lineChart').getContext('2d');
+        const lineChart = new Chart(ctxLine, {
+            type: 'line',
+            data: {
+                labels: ['9月', '10月', '11月'],
+                datasets: [{
+                    label: '合同金额 (元)',
+                    data: [10809466.61, 7349546.28, 9675523.94],
+                    borderColor: '#007BFF',
+                    fill: false,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const ctxHorizontalBar = document.getElementById('horizontalBarChart').getContext('2d');
+        const horizontalBarChart = new Chart(ctxHorizontalBar, {
+            type: 'bar',
+            data: {
+                labels: ['招商加盟部', '营销部', '新媒体', '全民营销', '门店业务', '交付中心', '加盟商', '会销部', '合道市场部', '城市合伙人'],
+                datasets: [{
+                    label: '11月合同金额 (元)',
+                    data: [208600, 3761089.38, 283131.98, 2467254.96, 465502, 1045070, 210300, 1157117.04, 55730, 21728.58],
+                    backgroundColor: '#007BFF'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.x.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        function downloadAsWord() {
+            const doc = new Blob([`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>企业合同数据分析看板</title>
+                </head>
+                <body>
+                    <h1 style="color:#007BFF;">企业合同数据分析看板</h1>
+                    <h2>KPI 指标</h2>
+                    <ul>
+                        <li>合同金额（11月）：9,675,523.94 元</li>
+                        <li>合同利润（11月）：7,496,623.32 元</li>
+                        <li>平均单价（11月）：5,577.84 元</li>
+                        <li>单数（11月）：1,344 单</li>
+                    </ul>
+                    <h2>文字分析总结</h2>
+                    <p><strong>营运能力：</strong>11月总业务量为1,344单，环比增长显著，说明业务拓展效果良好。</p>
+                    <p><strong>盈利能力：</strong>合同毛利达到7,496,623.32元，毛利率为77.48%，显示公司盈利能力较强。</p>
+                    <p><strong>关键增长点：</strong>营销部和全民营销是主要增长来源，分别贡献了376万和246万的合同金额。</p>
+                    <h2>图表</h2>
+                    <img src="${barChart.toBase64Image()}" alt="柱状图">
+                    <img src="${pieChart.toBase64Image()}" alt="饼图">
+                    <img src="${lineChart.toBase64Image()}" alt="折线图">
+                    <img src="${horizontalBarChart.toBase64Image()}" alt="横向条形图">
+                    <h2>详细数据表格</h2>
+                    <table border="1" style="border-collapse: collapse; width: 100%;">
+                        <tr>
+                            <th>信息来源</th>
+                            <th>11月单数</th>
+                            <th>10月单数</th>
+                            <th>环比变化</th>
+                            <th>11月合同金额</th>
+                            <th>10月合同金额</th>
+                            <th>环比变化</th>
+                            <th>11月平均单价</th>
+                            <th>10月平均单价</th>
+                            <th>环比变化</th>
+                        </tr>
+                        <tr>
+                            <td>招商加盟部</td>
+                            <td>7</td>
+                            <td>6</td>
+                            <td>+16.67%</td>
+                            <td>208,600.00</td>
+                            <td>127,200.00</td>
+                            <td>+64.00%</td>
+                            <td>29,800.00</td>
+                            <td>21,200.00</td>
+                            <td>+40.57%</td>
+                        </tr>
+                        <tr>
+                            <td>营销部</td>
+                            <td>523</td>
+                            <td>505</td>
+                            <td>+3.56%</td>
+                            <td>3,761,089.38</td>
+                            <td>3,102,411.28</td>
+                            <td>+21.24%</td>
+                            <td>7,191.03</td>
+                            <td>6,143.41</td>
+                            <td>+17.07%</td>
+                        </tr>
+                        <tr>
+                            <td>新媒体</td>
+                            <td>117</td>
+                            <td>127</td>
+                            <td>-7.87%</td>
+                            <td>283,131.98</td>
+                            <td>115,018.21</td>
+                            <td>+146.15%</td>
+                            <td>2,420.00</td>
+                            <td>905.65</td>
+                            <td>+167.23%</td>
+                        </tr>
+                        <tr>
+                            <td>全民营销</td>
+                            <td>417</td>
+                            <td>352</td>
+                            <td>+18.46%</td>
+                            <td>2,467,254.96</td>
+                            <td>2,176,385.60</td>
+                            <td>+13.36%</td>
+                            <td>5,919.08</td>
+                            <td>6,183.00</td>
+                            <td>-4.27%</td>
+                        </tr>
+                        <tr>
+                            <td>门店业务</td>
+                            <td>145</td>
+                            <td>116</td>
+                            <td>+24.14%</td>
+                            <td>465,502.00</td>
+                            <td>506,196.00</td>
+                            <td>-8.04%</td>
+                            <td>3,210.36</td>
+                            <td>4,363.76</td>
+                            <td>-26.43%</td>
+                        </tr>
+                        <tr>
+                            <td>交付中心</td>
+                            <td>10</td>
+                            <td>7</td>
+                            <td>+42.86%</td>
+                            <td>1,045,070.00</td>
+                            <td>298,100.00</td>
+                            <td>+250.56%</td>
+                            <td>104,507.00</td>
+                            <td>42,585.71</td>
+                            <td>+145.43%</td>
+                        </tr>
+                        <tr>
+                            <td>加盟商</td>
+                            <td>8</td>
+                            <td>7</td>
+                            <td>+14.29%</td>
+                            <td>210,300.00</td>
+                            <td>123,780.00</td>
+                            <td>+69.90%</td>
+                            <td>26,287.50</td>
+                            <td>17,682.86</td>
+                            <td>+48.70%</td>
+                        </tr>
+                        <tr>
+                            <td>会销部</td>
+                            <td>103</td>
+                            <td>48</td>
+                            <td>+114.58%</td>
+                            <td>1,157,117.04</td>
+                            <td>710,466.58</td>
+                            <td>+62.87%</td>
+                            <td>11,233.18</td>
+                            <td>14,801.39</td>
+                            <td>-24.10%</td>
+                        </tr>
+                        <tr>
+                            <td>合道市场部</td>
+                            <td>8</td>
+                            <td>17</td>
+                            <td>-52.94%</td>
+                            <td>55,730.00</td>
+                            <td>120,300.00</td>
+                            <td>-53.68%</td>
+                            <td>6,966.25</td>
+                            <td>7,076.47</td>
+                            <td>-1.56%</td>
+                        </tr>
+                        <tr>
+                            <td>城市合伙人</td>
+                            <td>6</td>
+                            <td>10</td>
+                            <td>-40.00%</td>
+                            <td>21,728.58</td>
+                            <td>69,688.61</td>
+                            <td>-68.85%</td>
+                            <td>3,621.43</td>
+                            <td>6,968.86</td>
+                            <td>-48.06%</td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+            `], { type: 'text/html' });
+            const url = URL.createObjectURL(doc);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '企业合同数据分析看板.doc';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
