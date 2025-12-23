@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业员工信息数据分析看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f7fa;
+            color: #333;
+        }
+        header {
+            background: linear-gradient(120deg, #007BFF, #00C6FF);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        .download-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #fff;
+            color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .download-btn:hover {
+            background: #e6f7ff;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .kpi-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .kpi-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            flex: 1 1 200px;
+            text-align: center;
+        }
+        .kpi-card h3 {
+            margin: 0 0 10px;
+            font-size: 18px;
+            color: #007BFF;
+        }
+        .kpi-card p {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .analysis {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+        }
+        .analysis h2 {
+            margin-top: 0;
+            color: #007BFF;
+        }
+        .analysis p {
+            margin: 10px 0;
+        }
+        .charts-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .chart-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            flex: 1 1 300px;
+        }
+        .chart-box canvas {
+            width: 100%;
+            height: 300px;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #007BFF;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .positive {
+            color: green;
+        }
+        .negative {
+            color: red;
+        }
+        @media (max-width: 768px) {
+            .kpi-container {
+                flex-direction: column;
+            }
+            .charts-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>企业员工信息数据分析看板</h1>
+        <button class="download-btn" onclick="downloadAsWord()">一键下载看板</button>
+    </header>
+    <div class="container">
+        <div class="kpi-container">
+            <div class="kpi-card">
+                <h3>总人数</h3>
+                <p id="totalEmployees">7</p>
+            </div>
+            <div class="kpi-card">
+                <h3>最早入职</h3>
+                <p id="oldestHire">2017-11-01</p>
+            </div>
+            <div class="kpi-card">
+                <h3>最晚入职</h3>
+                <p id="newestHire">2022-05-16</p>
+            </div>
+        </div>
+        <div class="analysis">
+            <h2>文字分析总结</h2>
+            <p><strong>营运能力：</strong>目前共有7名员工，入职时间跨度从2017年到2022年，表明公司运营时间较长且有持续的人才补充。</p>
+            <p><strong>盈利能力：</strong>由于没有直接的财务数据（如合同金额、毛利等），无法直接评估盈利能力。但可以推测，员工数量和入职时间分布可能与业务规模有关。</p>
+            <p><strong>关键增长点：</strong>员工入职时间分布显示，2020年至2022年间有较多新员工加入，这可能是公司业务扩展或市场扩张的关键时期。</p>
+        </div>
+        <div class="charts-container">
+            <div class="chart-box">
+                <h3>按门店统计员工数</h3>
+                <canvas id="storeChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>入职年份分布</h3>
+                <canvas id="yearChart"></canvas>
+            </div>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th>门店</th>
+                        <th>入职日期</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>艾莹</td>
+                        <td>东西湖田园街店</td>
+                        <td>2021-06-17</td>
+                    </tr>
+                    <tr>
+                        <td>严大鹏</td>
+                        <td>光谷店</td>
+                        <td>2020-04-22</td>
+                    </tr>
+                    <tr>
+                        <td>王俊</td>
+                        <td>黄陂前川店</td>
+                        <td>2018-05-15</td>
+                    </tr>
+                    <tr>
+                        <td>吴恒旭</td>
+                        <td>江岸黄孝河路店</td>
+                        <td>2022-02-18</td>
+                    </tr>
+                    <tr>
+                        <td>秦凡</td>
+                        <td>江汉香港路店</td>
+                        <td>2017-11-01</td>
+                    </tr>
+                    <tr>
+                        <td>龙刚强</td>
+                        <td>硚口店</td>
+                        <td>2022-05-16</td>
+                    </tr>
+                    <tr>
+                        <td>陆林</td>
+                        <td>青山建设三路店</td>
+                        <td>2021-04-12</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        const data = [
+            { name: "艾莹", store: "东西湖田园街店", hireDate: "2021-06-17" },
+            { name: "严大鹏", store: "光谷店", hireDate: "2020-04-22" },
+            { name: "王俊", store: "黄陂前川店", hireDate: "2018-05-15" },
+            { name: "吴恒旭", store: "江岸黄孝河路店", hireDate: "2022-02-18" },
+            { name: "秦凡", store: "江汉香港路店", hireDate: "2017-11-01" },
+            { name: "龙刚强", store: "硚口店", hireDate: "2022-05-16" },
+            { name: "陆林", store: "青山建设三路店", hireDate: "2021-04-12" }
+        ];
+
+        // KPI 数据
+        document.getElementById("totalEmployees").textContent = data.length;
+        const hireDates = data.map(item => item.hireDate);
+        document.getElementById("oldestHire").textContent = Math.min(...hireDates);
+        document.getElementById("newestHire").textContent = Math.max(...hireDates);
+
+        // 按门店统计员工数
+        const storeCounts = {};
+        data.forEach(item => {
+            if (!storeCounts[item.store]) {
+                storeCounts[item.store] = 0;
+            }
+            storeCounts[item.store]++;
+        });
+        const storeLabels = Object.keys(storeCounts);
+        const storeData = Object.values(storeCounts);
+
+        // 入职年份分布
+        const yearCounts = {};
+        data.forEach(item => {
+            const year = item.hireDate.split('-')[0];
+            if (!yearCounts[year]) {
+                yearCounts[year] = 0;
+            }
+            yearCounts[year]++;
+        });
+        const yearLabels = Object.keys(yearCounts);
+        const yearData = Object.values(yearCounts);
+
+        // 绘制图表
+        const ctxStore = document.getElementById('storeChart').getContext('2d');
+        new Chart(ctxStore, {
+            type: 'bar',
+            data: {
+                labels: storeLabels,
+                datasets: [{
+                    label: '门店员工数',
+                    data: storeData,
+                    backgroundColor: '#007BFF'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        const ctxYear = document.getElementById('yearChart').getContext('2d');
+        new Chart(ctxYear, {
+            type: 'pie',
+            data: {
+                labels: yearLabels,
+                datasets: [{
+                    label: '入职年份分布',
+                    data: yearData,
+                    backgroundColor: ['#007BFF', '#17A2B8', '#28A745', '#FFC107', '#DC3545']
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+
+        function downloadAsWord() {
+            const doc = new Blob(['<html><body><h1>企业员工信息数据分析看板</h1>'], { type: 'application/msword' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(doc);
+            link.download = '企业员工信息数据分析看板.doc';
+            link.click();
+        }
+    </script>
+</body>
+</html>
