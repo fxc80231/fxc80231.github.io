@@ -1,0 +1,498 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业营销合同数据分析看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .dashboard {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        h1 {
+            color: var(--secondary);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .download-btn {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .download-btn:hover {
+            background: #2980b9;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        .download-btn.bottom {
+            position: relative;
+            top: auto;
+            right: auto;
+            display: block;
+            margin: 30px auto;
+            text-align: center;
+        }
+        
+        .kpi-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--primary);
+        }
+        
+        .kpi-title {
+            font-size: 1.2rem;
+            color: var(--gray);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 8px;
+        }
+        
+        .kpi-change {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .positive {
+            color: var(--success);
+        }
+        
+        .negative {
+            color: var(--danger);
+        }
+        
+        .analysis {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            line-height: 1.8;
+            color: var(--dark);
+        }
+        
+        .analysis h2 {
+            color: var(--secondary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f2f5;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            height: 380px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chart-card:hover {
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--secondary);
+            padding-left: 10px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .chart-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        .data-table-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            margin-bottom: 50px;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 16px 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 14px 15px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9fbfd;
+        }
+        
+        tr:hover {
+            background-color: #f1f7fd;
+        }
+        
+        td.positive {
+            color: var(--success);
+            font-weight: 600;
+        }
+        
+        td.negative {
+            color: var(--danger);
+            font-weight: 600;
+        }
+        
+        @media (max-width: 1100px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-card {
+                height: 350px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+                padding-right: 140px;
+            }
+            
+            .download-btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+                top: 5px;
+                right: 5px;
+            }
+            
+            .chart-card {
+                height: 320px;
+            }
+            
+            .kpi-card {
+                padding: 20px;
+            }
+            
+            .kpi-value {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard" id="dashboard">
+        <div class="header">
+            <h1>企业营销合同数据分析看板</h1>
+            <button class="download-btn" onclick="generateWord()">
+                <i class="fas fa-download"></i> 下载Word报表
+            </button>
+        </div>
+        
+        <div class="kpi-cards">
+            <div class="kpi-card">
+                <div class="kpi-title">本月合同总额</div>
+                <div class="kpi-value">967.55万元</div>
+                <div class="kpi-change positive">↑ 31.64% (环比)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">本月合同毛利</div>
+                <div class="kpi-value">749.66万元</div>
+                <div class="kpi-change positive">↑ 35.64% (环比)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">本月签约单数</div>
+                <div class="kpi-value">1,344单</div>
+                <div class="kpi-change positive">↑ 12.47% (环比)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">平均合同单价</div>
+                <div class="kpi-value">5,577.84元</div>
+                <div class="kpi-change positive">↑ 20.60% (环比)</div>
+            </div>
+        </div>
+        
+        <div class="analysis">
+            <h2>经营分析报告</h2>
+            <p>11月整体合同金额达967.55万元，环比增长31.64%，同比提升显著；合同毛利749.66万元，环比上升35.64%。签约单数1344单，环比增长12.47%。核心增长点集中在营销部（376.11万元）和全民营销（246.73万元），环比分别增长21.22%和13.35%。会销部增长强劲，合同金额环比上升62.88%达到115.71万元。</p>
+            <p>主要风险点表现在：门店业务合同额环比下降8.04%，合道市场部业绩下滑53.68%，需关注其客户流失问题。成本控制方面，总成本占比13.62%，在合理区间；但应付佣金环比增长99.11%，超过合同额增速，佣金结构需优化。</p>
+            <p>建议：1. 强化营销部与新媒体渠道协同，放大头部业务优势；2. 优化门店业务模式，提升客户转化率；3. 重新评估佣金政策，建立与利润挂钩的浮动佣金机制；4. 针对城市合伙人（合同额仅2.17万元）制定专项孵化计划。下阶段重点关注全民营销和会销部的增长可持续性，同时控制佣金支出增速。</p>
+        </div>
+        
+        <div class="charts-container">
+            <div class="chart-card">
+                <div class="chart-title">各部门合同金额对比（万元）</div>
+                <div class="chart-container">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">合同金额部门分布</div>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">合同金额月度趋势（万元）</div>
+                <div class="chart-container">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">合同金额环比增长率排名</div>
+                <div class="chart-container">
+                    <canvas id="horizontalBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="data-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>部门</th>
+                        <th>11月合同金额(元)</th>
+                        <th>10月合同金额(元)</th>
+                        <th>环比增长</th>
+                        <th>增长率</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>营销部</td>
+                        <td>3,761,089.38</td>
+                        <td>3,102,411.28</td>
+                        <td>↑ 658,678.10</td>
+                        <td class="positive">21.22%</td>
+                    </tr>
+                    <tr>
+                        <td>全民营销</td>
+                        <td>2,467,254.96</td>
+                        <td>2,176,385.60</td>
+                        <td>↑ 290,869.36</td>
+                        <td class="positive">13.35%</td>
+                    </tr>
+                    <tr>
+                        <td>会销部</td>
+                        <td>1,157,117.04</td>
+                        <td>710,466.58</td>
+                        <td>↑ 446,650.46</td>
+                        <td class="positive">62.88%</td>
+                    </tr>
+                    <tr>
+                        <td>交付中心</td>
+                        <td>1,045,070.00</td>
+                        <td>298,100.00</td>
+                        <td>↑ 746,970.00</td>
+                        <td class="positive">250.58%</td>
+                    </tr>
+                    <tr>
+                        <td>招商加盟部</td>
+                        <td>208,600.00</td>
+                        <td>127,200.00</td>
+                        <td>↑ 81,400.00</td>
+                        <td class="positive">63.99%</td>
+                    </tr>
+                    <tr>
+                        <td>新媒体</td>
+                        <td>283,131.98</td>
+                        <td>115,018.21</td>
+                        <td>↑ 168,113.77</td>
+                        <td class="positive">146.16%</td>
+                    </tr>
+                    <tr>
+                        <td>加盟商</td>
+                        <td>210,300.00</td>
+                        <td>123,780.00</td>
+                        <td>↑ 86,520.00</td>
+                        <td class="positive">69.90%</td>
+                    </tr>
+                    <tr>
+                        <td>门店业务</td>
+                        <td>465,502.00</td>
+                        <td>506,196.00</td>
+                        <td>↓ 40,694.00</td>
+                        <td class="negative">-8.04%</td>
+                    </tr>
+                    <tr>
+                        <td>合道市场部</td>
+                        <td>55,730.00</td>
+                        <td>120,300.00</td>
+                        <td>↓ 64,570.00</td>
+                        <td class="negative">-53.68%</td>
+                    </tr>
+                    <tr>
+                        <td>城市合伙人</td>
+                        <td>21,728.58</td>
+                        <td>69,688.61</td>
+                        <td>↓ 47,960.03</td>
+                        <td class="negative">-68.82%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <button class="download-btn bottom" onclick="generateWord()">
+            <i class="fas fa-download"></i> 下载完整分析报表
+        </button>
+    </div>
+
+    <script>
+        // 格式化数字：千分位和保留两位小数
+        function formatNumber(num) {
+            return num.toLocaleString('zh-CN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // 图表颜色配置（Material Design 调色板）
+        const chartColors = [
+            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', 
+            '#e74a3b', '#5a5c69', '#2c9faf', '#e74a3b',
+            '#858796', '#5a5c69', '#2c9faf'
+        ];
+
+        // 初始化柱状图
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        const barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['营销部', '全民营销', '会销部', '交付中心', '招商加盟部', '新媒体', '门店业务', '加盟商', '合道市场部', '城市合伙人'],
+                datasets: [{
+                    label: '合同金额(万元)',
+                    data: [376.11, 246.73, 115.71, 104.51, 20.86, 28.31, 46.55, 21.03, 5.57, 2.17],
+                    backgroundColor: chartColors,
+                    borderColor: chartColors.map(color => color.replace(')', ', 0.8)').replace('rgb', 'rgba')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: (value) => formatNumber(value) + '万',
+                        color: '#2c3e50',
+                        font: { weight: 'bold' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: '金额(万元)' }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+
+        // 初始化饼图
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        const pieChart =
