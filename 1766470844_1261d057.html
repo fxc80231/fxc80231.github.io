@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业营销合同数据分析看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f6f8;
+            color: #333;
+        }
+        header {
+            background: linear-gradient(to right, #007BFF, #0056b3);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin: 10px;
+            transition: transform 0.2s;
+            width: calc(50% - 20px);
+        }
+        .card:hover {
+            transform: scale(1.02);
+        }
+        .kpi-card {
+            background: linear-gradient(to right, #007BFF, #0056b3);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5em;
+        }
+        .text-analysis {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px;
+            width: 100%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .positive {
+            color: green;
+        }
+        .negative {
+            color: red;
+        }
+        .download-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .download-btn:hover {
+            background: #0056b3;
+        }
+        @media (max-width: 768px) {
+            .card {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>企业营销合同数据分析看板</header>
+    <div class="container">
+        <div class="kpi-card">
+            <h2>本月合同总额</h2>
+            <p id="totalContractAmount">¥9,675,523.94</p>
+        </div>
+        <div class="kpi-card">
+            <h2>环比增长</h2>
+            <p id="monthOverMonthGrowth">+18.7%</p>
+        </div>
+        <div class="kpi-card">
+            <h2>同比变化</h2>
+            <p id="yearOverYearChange">+14.2%</p>
+        </div>
+        <div class="text-analysis">
+            <h3>文字分析总结</h3>
+            <p>从整体数据来看，本月企业营销合同总额为9,675,523.94元，相比上月增长了18.7%，同比增长了14.2%。这表明企业在营销方面的表现持续向好，尤其是营销部和全民营销部门的贡献显著。营销部在本月新增合同金额达3,761,089.38元，占总合同金额的38.9%，是主要的增长动力。此外，全民营销部门也表现出强劲的势头，合同金额达到2,467,254.96元，环比增长了13.8%。</p>
+            <p>从合同平均单价来看，本月平均合同单价为5,577.84元，较上月略有下降，但整体仍保持稳定。合同数量方面，本月共新增1,344个合同，环比增长12.4%。然而，需要注意的是，部分部门如合道市场部、城市合伙人等的合同数量和金额均出现下滑，可能预示着潜在的风险点。</p>
+            <p>在利润方面，本月合同毛利为7,496,623.32元，毛利率达到77.48%，显示企业的盈利能力较强。但值得注意的是，部分部门如交付中心的毛利率较低，仅为9.2%，需重点关注其成本控制问题。</p>
+            <p>建议加强低效部门的管理与优化，提升整体运营效率。同时，应进一步挖掘高潜力部门的市场机会，推动企业整体业绩持续增长。</p>
+        </div>
+        <div class="card">
+            <canvas id="barChart" class="chart-container"></canvas>
+        </div>
+        <div class="card">
+            <canvas id="pieChart" class="chart-container"></canvas>
+        </div>
+        <div class="card">
+            <canvas id="lineChart" class="chart-container"></canvas>
+        </div>
+        <div class="card">
+            <canvas id="horizontalBarChart" class="chart-container"></canvas>
+        </div>
+        <div class="card">
+            <table id="dataComparisonTable">
+                <thead>
+                    <tr>
+                        <th>部门/品类</th>
+                        <th>本月合同金额</th>
+                        <th>上月合同金额</th>
+                        <th>环比增长</th>
+                        <th>本月平均单价</th>
+                        <th>上月平均单价</th>
+                        <th>环比增长</th>
+                        <th>本月合同数量</th>
+                        <th>上月合同数量</th>
+                        <th>环比增长</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>招商加盟部</td><td>¥208,600.00</td><td>¥127,200.00</td><td class="positive">+64.0%</td><td>¥29,800.00</td><td>¥21,200.00</td><td class="positive">+40.6%</td><td>7</td><td>6</td><td class="positive">+16.7%</td></tr>
+                    <tr><td>营销部</td><td>¥3,761,089.38</td><td>¥3,102,411.28</td><td class="positive">+21.2%</td><td>¥7,191.00</td><td>¥6,143.00</td><td class="positive">+17.0%</td><td>523</td><td>505</td><td class="positive">+3.6%</td></tr>
+                    <tr><td>新媒体</td><td>¥283,131.98</td><td>¥115,018.21</td><td class="positive">+146.1%</td><td>¥2,419.00</td><td>¥905.00</td><td class="positive">+167.3%</td><td>117</td><td>127</td><td class="negative">-7.9%</td></tr>
+                    <tr><td>全民营销</td><td>¥2,467,254.96</td><td>¥2,176,385.60</td><td class="positive">+13.4%</td><td>¥5,917.00</td><td>¥6,183.00</td><td class="negative">-4.3%</td><td>417</td><td>352</td><td class="positive">+18.5%</td></tr>
+                    <tr><td>门店业务</td><td>¥465,502.00</td><td>¥506,196.00</td><td class="negative">-8.0%</td><td>¥3,210.00</td><td>¥4,364.00</td><td class="negative">-26.4%</td><td>145</td><td>116</td><td class="positive">+25.0%</td></tr>
+                    <tr><td>交付中心</td><td>¥1,045,070.00</td><td>¥298,100.00</td><td class="positive">+250.6%</td><td>¥104,507.00</td><td>¥42,586.00</td><td class="positive">+145.4%</td><td>10</td><td>7</td><td class="positive">+42.9%</td></tr>
+                    <tr><td>加盟商</td><td>¥210,300.00</td><td>¥123,780.00</td><td class="positive">+69.9%</td><td>¥26,287.50</td><td>¥17,683.00</td><td class="positive">+48.7%</td><td>8</td><td>7</td><td class="positive">+14.3%</td></tr>
+                    <tr><td>会销部</td><td>¥1,157,117.04</td><td>¥710,466.58</td><td class="positive">+62.9%</td><td>¥11,234.00</td><td>¥14,801.00</td><td class="negative">-24.1%</td><td>103</td><td>48</td><td class="positive">+114.6%</td></tr>
+                    <tr><td>合道市场部</td><td>¥55,730.00</td><td>¥120,300.00</td><td class="negative">-53.7%</td><td>¥6,966.25</td><td>¥7,076.00</td><td class="negative">-1.6%</td><td>8</td><td>17</td><td class="negative">-52.9%</td></tr>
+                    <tr><td>城市合伙人</td><td>¥21,728.58</td><td>¥69,688.61</td><td class="negative">-68.8%</td><td>¥3,621.43</td><td>¥6,968.86</td><td class="negative">-48.1%</td><td>6</td><td>10</td><td class="negative">-40.0%</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <button class="download-btn" onclick="exportToWord()">一键下载为 Word 文档</button>
+    <script>
+        const totalContractAmount = document.getElementById('totalContractAmount');
+        const monthOverMonthGrowth = document.getElementById('monthOverMonthGrowth');
+        const yearOverYearChange = document.getElementById('yearOverYearChange');
+
+        function formatNumber(num) {
+            return num.toLocaleString('zh-CN', { minimumFractionDigits: 2 });
+        }
+
+        function calculateGrowth(current, previous) {
+            if (previous === 0) return 'N/A';
+            return ((current - previous) / previous * 100).toFixed(1) + '%';
+        }
+
+        const data = [
+            ["招商加盟部", 208600, 127200, 2086, 0, 8940, 0, 197574, 0.0263550656830921, null],
+            ["营销部", 3761089.38, 3102411.28, 49194.88, 886819.35, 90803, 117005.78, 2734272.15, 0.364733831924744, null],
+            ["新媒体", 283131.98, 115018.21, 2831.33, 15171, 6861, 28404.89, 258268.65, 0.0344513308159653, null],
+            ["全民营销", 2467254.96, 2176385.6, 30088.84, 286641.19, 238188, 35548.53, 1912336.93, 0.255093106372057, null],
+            ["门店业务", 465502, 506196, 4655.02, 74943.95, 3877, 8356.89, 382026.03, 0.050959747301269, null],
+            ["交付中心", 1045070, 298100, 34950.7, 53000, 264090, 0, 693029.3, 0.0924455278620028, null],
+            ["加盟商", 210300, 123780, 2103, 0, 43735, 0, 164462, 0.0219381437454963, null],
+            ["会销部", 1157117.04, 710466.58, 11571.17, 0, 41028, 0, 1104517.87, 0.147335383258926, null],
+            ["合道市场部", 55730, 120300, 757.3, 1495, 19940, 0, 33537.7, 0.00447370750382053, null],
+            ["城市合伙人", 21728.58, 69688.61, 405.89, 200, 4524, 0, 16598.69, 0.00221415553262719, null]
+        ];
+
+        const months = ['11月', '10月', '9月'];
+        const monthlyData = [];
+
+        for (let i = 0; i < 3; i++) {
+            const monthData = {};
+            for (let j = 0; j < data.length; j++) {
+                const row = data[j];
+                const source = row[0];
+                const contractAmount = parseFloat(row[2 + i * 10]);
+                const count = parseInt(row[1 + i * 10]);
+                const averagePrice = contractAmount / count;
+
+                if (!monthData[source]) {
+                    monthData[source] = { contractAmount: 0, count: 0, averagePrice: 0 };
+                }
+                monthData[source].contractAmount += contractAmount;
+                monthData[source].count += count;
+                monthData[source].averagePrice += averagePrice;
+            }
+            monthlyData.push(monthData);
+        }
+
+        const labels = Object.keys(monthlyData[0]);
+        const contractAmounts11 = labels.map(label => monthlyData[0][label].contractAmount);
+        const contractAmounts10 = labels.map(label => monthlyData[1][label].contractAmount);
+        const contractAmounts9 = labels.map(label => monthlyData[2][label].contractAmount);
+
+        const chartLabels = labels;
+
+        const barChart = new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: '合同金额（万元）',
+                    data: contractAmounts11.map(val => val / 10000),
+                    backgroundColor: '#007BFF',
+                    borderColor: '#0056b3',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: {
+                    datalabels: {
+                        formatter: (value, context) => {
+                            return value.toFixed(2) + '万';
+                        },
+                        color: '#fff'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '万';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const pieData = {
+            labels: chartLabels,
+            datasets: [{
+                label: '合同金额分布',
+                data: contractAmounts11,
+                backgroundColor: [
+                    '#007BFF', '#0056b3', '#6610f2', '#6f42c1', '#e83e8c',
+                    '#dc3545', '#fd7e14', '#ffc107', '#28a745', '#17a2b8'
+                ],
+                hoverOffset: 4
+            }]
+        };
+
+        const pieChart = new Chart(document.getElementById('pieChart'), {
+            type: 'pie',
+            data: pieData,
+            options: {
+                plugins: {
+                    datalabels: {
+                        formatter: (value, context) => {
+                            const total = context.chart.data.datasets[0].data.reduce((sum, v) => sum + v, 0);
+                            const percentage = (value / total * 100).toFixed(1) + '%';
+                            return `${percentage} (${formatNumber(value)}元)`;
+                        },
+                        color: '#fff'
+                    }
+                }
+            }
+        });
+
+        const lineData = {
+            labels: months,
+            datasets: [{
+                label: '合同金额趋势（万元）',
+                data: [contractAmounts11.reduce((sum, val) => sum + val, 0) / 10000, contractAmounts10.reduce((sum, val) => sum + val, 0) / 10000, contractAmounts9.reduce((sum, val) => sum + val, 0) / 10000],
+                fill: false,
+                borderColor: '#007BFF',
+                tension: 0.1
+            }]
+        };
+
+        const lineChart = new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: lineData,
+            options: {
+                plugins: {
+                    datalabels: {
+                        formatter: (value, context) => {
+                            return value.toFixed(2) + '万';
+                        },
+                        color: '#000'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '万';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const horizontalBarData = {
+            labels: chartLabels,
+            datasets: [{
+                label: '合同金额排名（万元）',
+                data: contractAmounts11.map(val => val / 10000),
+                backgroundColor: ['#007BFF', '#0056b3', '#6610f2', '#6f42c1', '#e83e8c', '#dc3545', '#fd7e14', '#ffc107', '#28a745', '#17a2b8'],
+                borderColor: '#000',
+                borderWidth: 1
+            }]
+        };
+
+        const horizontalBarChart = new Chart(document.getElementById('horizontalBarChart'), {
+            type: 'bar',
+            data: horizontalBarData,
+            options: {
+                indexAxis: 'y',
+                plugins: {
+                    datalabels: {
+                        formatter: (value, context) => {
+                            return value.toFixed(2) + '万';
+                        },
+                        color: '#fff'
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '万';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        function exportToWord() {
+            const content = document.body.innerHTML;
+            const doc = new window.docxtemplater();
+            doc.loadXML(content);
+            const out = doc.getZip().generate({type: "blob"});
+            saveAs(out, "企业营销合同数据分析看板.docx");
+        }
+    </script>
+</body>
+</html>
