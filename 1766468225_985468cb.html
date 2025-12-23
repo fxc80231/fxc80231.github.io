@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业合同数据分析看板</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-container {
+            padding: 20px;
+        }
+        .kpi-card {
+            background: linear-gradient(135deg, #007bff, #00c6ff);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s ease-in-out;
+        }
+        .kpi-card:hover {
+            transform: scale(1.05);
+        }
+        .chart-container {
+            margin-top: 30px;
+        }
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .download-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .download-btn button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .download-btn button:hover {
+            background-color: #0056b3;
+        }
+        table thead th {
+            background-color: #007bff;
+            color: white;
+        }
+        .positive {
+            color: green;
+        }
+        .negative {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1 class="text-center mb-4">企业合同数据分析看板</h1>
+
+        <!-- KPI 卡片 -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <h4>合同金额总额</h4>
+                    <p id="totalContractAmount"></p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <h4>合同利润总额</h4>
+                    <p id="totalProfit"></p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <h4>平均合同单价</h4>
+                    <p id="averageContractPrice"></p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <h4>合同单数总数</h4>
+                    <p id="totalContractCount"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文字分析总结 -->
+        <div class="mt-4">
+            <h3>文字分析总结</h3>
+            <p><strong>营运能力分析：</strong>整体来看，合同金额和合同数量在各月间呈现波动增长趋势，特别是营销部和全民营销的合同数量和金额显著提升，表明公司市场拓展能力较强。</p>
+            <p><strong>盈利能力分析：</strong>合同毛利率保持在较高水平（约77.5%），说明公司具备较强的盈利能力。但需要注意的是，部分业务来源如合道市场部、城市合伙人等毛利率较低，需重点关注成本控制。</p>
+            <p><strong>关键增长点：</strong>营销部和全民营销是主要的增长来源，其合同金额和数量均呈明显上升趋势。此外，招商加盟部的合同金额也在稳步增长。</p>
+        </div>
+
+        <!-- 图表 -->
+        <div class="chart-container">
+            <h3>合同金额与利润趋势图</h3>
+            <canvas id="lineChart" height="100"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>各部门合同金额占比</h3>
+            <canvas id="pieChart" height="100"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>各部门合同数量排名</h3>
+            <canvas id="barChart" height="100"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>合同平均单价对比</h3>
+            <canvas id="horizontalBarChart" height="100"></canvas>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="mt-4">
+            <h3>详细数据对比表格</h3>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>信息来源</th>
+                            <th>11月合同金额</th>
+                            <th>10月合同金额</th>
+                            <th>同比变化</th>
+                            <th>11月合同利润</th>
+                            <th>10月合同利润</th>
+                            <th>同比变化</th>
+                            <th>11月合同数量</th>
+                            <th>10月合同数量</th>
+                            <th>同比变化</th>
+                            <th>11月平均单价</th>
+                            <th>10月平均单价</th>
+                            <th>同比变化</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 下载按钮 -->
+        <div class="download-btn">
+            <button onclick="downloadAsWord()">一键下载看板</button>
+        </div>
+    </div>
+
+    <!-- Chart.js 引入 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- JavaScript 逻辑 -->
+    <script>
+        const data = [
+            ["招商加盟部", 208600, 127200, 81400, 197574, 125928, 71646, 7, 6, 1, 29800, 21200, 8600],
+            ["营销部", 3761089.38, 3102411.28, 658678.1, 2734272.15, 2499117.95, 235154.2, 523, 505, 18, 7191.37, 6143.39, 1047.98],
+            ["新媒体", 283131.98, 115018.21, 168113.77, 258268.65, 108459.03, 149809.62, 117, 127, -10, 2420.79, 905.65, 1515.14],
+            ["全民营销", 2467254.96, 2176385.6, 290869.36, 1912336.93, 1398428.29, 513908.64, 417, 352, 65, 5919.08, 6183.22, -264.14],
+            ["门店业务", 465502, 506196, -40694, 382026.03, 252555.04, 129470.99, 145, 116, 29, 3210.36, 4363.76, -1153.4],
+            ["交付中心", 1045070, 298100, 746970, 693029.3, 219639, 473390.3, 10, 7, 3, 104507, 42585.71, 61921.29],
+            ["加盟商", 210300, 123780, 86520, 164462, 101222.2, 63239.8, 8, 7, 1, 26287.5, 17682.86, 8604.64],
+            ["会销部", 1157117.04, 710466.58, 446650.46, 1104517.87, 686431.93, 418085.94, 103, 48, 55, 11234.15, 14801.39, -3567.24],
+            ["合道市场部", 55730, 120300, -64570, 33537.7, 89741, -56203.3, 8, 17, -9, 6966.25, 7076.47, -110.22],
+            ["城市合伙人", 21728.58, 69688.61, -47960.03, 16598.69, 45277.82, -28679.13, 6, 10, -4, 3621.43, 6968.86, -3347.43]
+        ];
+
+        const months = ["11月", "10月", "9月"];
+        const monthData = {};
+
+        // 计算总合同金额、利润、数量和平均单价
+        const totalContractAmount = data.reduce((sum, item) => sum + item[1], 0);
+        const totalProfit = data.reduce((sum, item) => sum + item[4], 0);
+        const totalContractCount = data.reduce((sum, item) => sum + item[7], 0);
+        const averageContractPrice = totalContractAmount / totalContractCount;
+
+        document.getElementById("totalContractAmount").textContent = totalContractAmount.toFixed(2);
+        document.getElementById("totalProfit").textContent = totalProfit.toFixed(2);
+        document.getElementById("totalContractCount").textContent = totalContractCount;
+        document.getElementById("averageContractPrice").textContent = averageContractPrice.toFixed(2);
+
+        // 创建表格数据
+        const dataTableBody = document.getElementById("dataTable");
+        data.forEach(item => {
+            const row = document.createElement("tr");
+
+            const source = document.createElement("td");
+            source.textContent = item[0];
+
+            const amount11 = document.createElement("td");
+            amount11.textContent = item[1].toFixed(2);
+
+            const amount10 = document.createElement("td");
+            amount10.textContent = item[2].toFixed(2);
+
+            const amountDiff = item[1] - item[2];
+            const amountChange = document.createElement("td");
+            amountChange.textContent = amountDiff.toFixed(2);
+            if (amountDiff > 0) {
+                amountChange.classList.add("positive");
+            } else {
+                amountChange.classList.add("negative");
+            }
+
+            const profit11 = document.createElement("td");
+            profit11.textContent = item[4].toFixed(2);
+
+            const profit10 = document.createElement("td");
+            profit10.textContent = item[5].toFixed(2);
+
+            const profitDiff = item[4] - item[5];
+            const profitChange = document.createElement("td");
+            profitChange.textContent = profitDiff.toFixed(2);
+            if (profitDiff > 0) {
+                profitChange.classList.add("positive");
+            } else {
+                profitChange.classList.add("negative");
+            }
+
+            const count11 = document.createElement("td");
+            count11.textContent = item[7];
+
+            const count10 = document.createElement("td");
+            count10.textContent = item[8];
+
+            const countDiff = item[7] - item[8];
+            const countChange = document.createElement("td");
+            countChange.textContent = countDiff;
+            if (countDiff > 0) {
+                countChange.classList.add("positive");
+            } else {
+                countChange.classList.add("negative");
+            }
+
+            const price11 = document.createElement("td");
+            price11.textContent = item[10].toFixed(2);
+
+            const price10 = document.createElement("td");
+            price10.textContent = item[11].toFixed(2);
+
+            const priceDiff = item[10] - item[11];
+            const priceChange = document.createElement("td");
+            priceChange.textContent = priceDiff.toFixed(2);
+            if (priceDiff > 0) {
+                priceChange.classList.add("positive");
+            } else {
+                priceChange.classList.add("negative");
+            }
+
+            row.appendChild(source);
+            row.appendChild(amount11);
+            row.appendChild(amount10);
+            row.appendChild(amountChange);
+            row.appendChild(profit11);
+            row.appendChild(profit10);
+            row.appendChild(profitChange);
+            row.appendChild(count11);
+            row.appendChild(count10);
+            row.appendChild(countChange);
+            row.appendChild(price11);
+            row.appendChild(price10);
+            row.appendChild(priceChange);
+
+            dataTableBody.appendChild(row);
+        });
+
+        // 绘制折线图
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: '合同金额',
+                    data: [data[0][1], data[0][2], data[0][3]],
+                    borderColor: '#007bff',
+                    fill: false,
+                    tension: 0.3
+                }, {
+                    label: '合同利润',
+                    data: [data[0][4], data[0][5], data[0][6]],
+                    borderColor: '#28a745',
+                    fill: false,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '月份'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '金额（元）'
+                        }
+                    }
+                }
+            }
+        });
+
+        // 绘制饼图
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: data.map(item => item[0]),
+                datasets: [{
+                    label: '合同金额占比',
+                    data: data.map(item => item[1]),
+                    backgroundColor: [
+                        '#007bff', '#00c6ff', '#007bff', '#00c6ff', '#007bff', '#00c6ff',
+                        '#007bff', '#00c6ff', '#007bff', '#00c6ff'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+
+        // 绘制柱状图
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: data.map(item => item[0]),
+                datasets: [{
+                    label: '合同数量',
+                    data: data.map(item => item[7]),
+                    backgroundColor: '#007bff'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '信息来源'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '合同数量'
+                        }
+                    }
+                }
+            }
+        });
+
+        // 绘制横向条形图
+        const horizontalBarCtx = document.getElementById('horizontalBarChart').getContext('2d');
+        new Chart(horizontalBarCtx, {
+            type: 'bar',
+            data: {
+                labels: data.map(item => item[0]),
+                datasets: [{
+                    label: '平均合同单价',
+                    data: data.map(item => item[10]),
+                    backgroundColor: '#007bff'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '平均合同单价'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '信息来源'
+                        }
+                    }
+                }
+            }
+        });
+
+        // 下载为 Word 文档
+        function downloadAsWord() {
+            const content = `
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>企业合同数据分析看板</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; }
+                        h1 { text-align: center; }
+                        .kpi { margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+                        .positive { color: green; }
+                        .negative { color: red; }
+                    </style>
+                </head>
+                <body>
+                    <h1>企业合同数据分析看板</h1>
+                    <div class="kpi">
+                        <h2>关键指标</h2>
+                        <p><strong>合同金额总额:</strong> ${totalContractAmount.toFixed(2)} 元</p>
+                        <p><strong>合同利润总额:</strong> ${totalProfit.toFixed(2)} 元</p>
+                        <p><strong>平均合同单价:</strong> ${averageContractPrice.toFixed(2)} 元</p>
+                        <p><strong>合同单数总数:</strong> ${totalContractCount} 个</p>
+                    </div>
+                    <h2>文字分析总结</h2>
+                    <p><strong>营运能力分析：</strong>整体来看，合同金额和合同数量在各月间呈现波动增长趋势，特别是营销部和全民营销的合同数量和金额显著提升，表明公司市场拓展能力较强。</p>
+                    <p><strong>盈利能力分析：</strong>合同毛利率保持在较高水平（约77.5%），说明公司具备较强的盈利能力。但需要注意的是，部分业务来源如合道市场部、城市合伙人等毛利率较低，需重点关注成本控制。</p>
+                    <p><strong>关键增长点：</strong>营销部和全民营销是主要的增长来源，其合同金额和数量均呈明显上升趋势。此外，招商加盟部的合同金额也在稳步增长。</p>
+                    <h2>详细数据对比表格</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>信息来源</th>
+                                <th>11月合同金额</th>
+                                <th>10月合同金额</th>
+                                <th>同比变化</th>
+                                <th>11月合同利润</th>
+                                <th>10月合同利润</th>
+                                <th>同比变化</th>
+                                <th>11月合同数量</th>
+                                <th>10月合同数量</th>
+                                <th>同比变化</th>
+                                <th>11月平均单价</th>
+                                <th>10月平均单价</th>
+                                <th>同比变化</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dataTableBody.innerHTML}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob([content], { type: 'application/msword' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '企业合同数据分析看板.doc';
+            link.click();
+        }
+    </script>
+</body>
+</html>
