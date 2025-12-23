@@ -1,0 +1,465 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业营销合同数据分析看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #4285f4;
+            --accent: #34a853;
+            --danger: #ea4335;
+            --light: #f8f9fa;
+            --dark: #202124;
+            --gray: #dadce0;
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        }
+        
+        .kpi-title {
+            font-size: 1.1rem;
+            color: #5f6368;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+        
+        .kpi-change {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .positive {
+            color: var(--accent);
+        }
+        
+        .negative {
+            color: var(--danger);
+        }
+        
+        .analysis-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            height: 380px;
+            position: relative;
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        canvas {
+            width: 100% !important;
+            height: 300px !important;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        
+        th, td {
+            padding: 14px 16px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            color: var(--primary);
+            font-weight: 600;
+            text-align: center;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        tr:hover {
+            background-color: #f1f8ff;
+        }
+        
+        .download-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto 40px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(26, 115, 232, 0.2);
+        }
+        
+        .download-btn:hover {
+            background: #0d62c9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(26, 115, 232, 0.3);
+        }
+        
+        .float-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .float-btn:hover {
+            background: #2d925e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #5f6368;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 350px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .kpi-value {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="float-btn" id="downloadBtn">下载Word文档</button>
+    
+    <div class="container" id="dashboard">
+        <header>
+            <h1>企业营销合同数据分析看板</h1>
+            <p>数据周期：2023年9月-11月</p>
+        </header>
+        
+        <div class="kpi-container">
+            <div class="kpi-card">
+                <div class="kpi-title">本月合同总额</div>
+                <div class="kpi-value">¥9,675,524</div>
+                <div class="kpi-change">
+                    环比：<span class="positive">↑31.65%</span>
+                    同比：<span class="negative">↓10.50%</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-title">本月合同利润</div>
+                <div class="kpi-value">¥7,496,623</div>
+                <div class="kpi-change">
+                    环比：<span class="positive">↑35.64%</span>
+                    同比：<span class="negative">↓9.66%</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-title">本月合同单数</div>
+                <div class="kpi-value">1,344单</div>
+                <div class="kpi-change">
+                    环比：<span class="positive">↑12.47%</span>
+                    同比：<span class="negative">↓19.52%</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-title">平均合同单价</div>
+                <div class="kpi-value">¥7,198</div>
+                <div class="kpi-change">
+                    环比：<span class="positive">↑17.03%</span>
+                    同比：<span class="negative">↓4.98%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="analysis-section">
+            <h2 class="section-title">分析总结</h2>
+            <p>2023年11月合同总额为967.55万元，环比大幅增长31.65%，合同利润达749.66万元，环比增长35.64%，扭转了10月份下滑趋势。从部门维度分析，营销部贡献最大合同额376.11万元（占比38.87%），全民营销部门246.73万元（占比25.50%）紧随其后。平均合同单价提升至7,198元，环比增长17.03%，反映业务结构优化。</p>
+            <p>关键增长点在于营销部合同额环比增长21.23%，全民营销部门增长13.37%。会销部合同额环比增幅高达62.88%，成为增长最快板块。风险点方面，新媒体部门合同额环比下降59.67%，门店业务下降8.04%，交付中心虽增长250.57%但基数较小。佣金支出环比增长99.13%至72.2万元，成本占比升至7.46%，需关注成本控制。</p>
+            <p>建议：1）巩固营销部与全民营销优势业务；2）优化新媒体获客渠道，提升转化率；3）控制佣金支出比例，建立成本预警机制；4）针对门店业务开发高客单价产品。四季度需重点关注合同利润率和成本结构优化，为明年业务扩张奠定基础。</p>
+        </div>
+        
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3 class="chart-title">各部门合同金额排名（万元）</h3>
+                <canvas id="barChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">合同金额部门分布</h3>
+                <canvas id="pieChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">近三月合同金额趋势（万元）</h3>
+                <canvas id="lineChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">部门合同利润排名（万元）</h3>
+                <canvas id="horizontalBarChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <h2 class="section-title">部门详细数据对比</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>部门</th>
+                        <th>9月合同额</th>
+                        <th>10月合同额</th>
+                        <th>11月合同额</th>
+                        <th>环比增长</th>
+                        <th>9月利润</th>
+                        <th>10月利润</th>
+                        <th>11月利润</th>
+                        <th>利润环比</th>
+                        <th>合同单数</th>
+                        <th>单价环比</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>营销部</td>
+                        <td>4,859,093</td>
+                        <td>3,102,411</td>
+                        <td>3,761,089</td>
+                        <td><span class="positive">+21.23%</span></td>
+                        <td>3,707,611</td>
+                        <td>2,499,118</td>
+                        <td>2,734,272</td>
+                        <td><span class="positive">+9.41%</span></td>
+                        <td>523</td>
+                        <td><span class="positive">+17.32%</span></td>
+                    </tr>
+                    <tr>
+                        <td>全民营销</td>
+                        <td>2,352,318</td>
+                        <td>2,176,386</td>
+                        <td>2,467,255</td>
+                        <td><span class="positive">+13.37%</span></td>
+                        <td>1,615,683</td>
+                        <td>1,398,428</td>
+                        <td>1,912,337</td>
+                        <td><span class="positive">+36.76%</span></td>
+                        <td>417</td>
+                        <td><span class="positive">+15.64%</span></td>
+                    </tr>
+                    <tr>
+                        <td>会销部</td>
+                        <td>996,529</td>
+                        <td>710,467</td>
+                        <td>1,157,117</td>
+                        <td><span class="positive">+62.88%</span></td>
+                        <td>960,432</td>
+                        <td>686,432</td>
+                        <td>1,104,518</td>
+                        <td><span class="positive">+60.91%</span></td>
+                        <td>103</td>
+                        <td><span class="positive">+24.18%</span></td>
+                    </tr>
+                    <tr>
+                        <td>交付中心</td>
+                        <td>460,224</td>
+                        <td>298,100</td>
+                        <td>1,045,070</td>
+                        <td><span class="positive">+250.57%</span></td>
+                        <td>333,912</td>
+                        <td>219,639</td>
+                        <td>693,029</td>
+                        <td><span class="positive">+215.44%</span></td>
+                        <td>10</td>
+                        <td><span class="positive">+106.32%</span></td>
+                    </tr>
+                    <tr>
+                        <td>新媒体</td>
+                        <td>604,754</td>
+                        <td>115,018</td>
+                        <td>283,132</td>
+                        <td><span class="negative">-59.67%</span></td>
+                        <td>477,786</td>
+                        <td>108,459</td>
+                        <td>258,269</td>
+                        <td><span class="negative">-58.01%</span></td>
+                        <td>117</td>
+                        <td><span class="negative">-38.21%</span></td>
+                    </tr>
+                    <tr>
+                        <td>门店业务</td>
+                        <td>347,934</td>
+                        <td>506,196</td>
+                        <td>465,502</td>
+                        <td><span class="negative">-8.04%</span></td>
+                        <td>315,112</td>
+                        <td>252,555</td>
+                        <td>382,026</td>
+                        <td><span class="positive">+51.25%</span></td>
+                        <td>145</td>
+                        <td><span class="negative">-5.12%</span></td>
+                    </tr>
+                    <tr>
+                        <td>加盟商</td>
+                        <td>349,776</td>
+                        <td>123,780</td>
+                        <td>210,300</td>
+                        <td><span class="positive">+69.90%</span></td>
+                        <td>301,378</td>
+                        <td>101,222</td>
+                        <td>164,462</td>
+                        <td><span class="positive">+62.49%</span></td>
+                        <td>8</td>
+                        <td><span class="positive">+34.21%</span></td>
+                    </tr>
+                    <tr>
+                        <td>招商加盟部</td>
+                        <td>231,600</td>
+                        <td>127,200</td>
+                        <td>208,600</td>
+                        <td><span class="positive">+64.00%</span></td>
+                        <td>215,814</td>
+                        <td>125,928</td>
+                        <td>197,574</td>
+                        <td><span class="positive">+56.91%</span></td>
+                        <td>7</td>
+                        <td><span class="positive">+45.78%</span></td>
+                    </tr>
+                    <tr>
+                        <td>合道市场部</td>
+                        <td>326,315</td>
+                        <td>120,300</td>
+                        <td>55,730</td>
+                        <td><span class="negative">-53.69%</span></td>
+                        <td>167,732</td>
+                        <td>89,741</td>
+                        <td>33,538</td>
+                        <
