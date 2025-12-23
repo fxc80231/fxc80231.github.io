@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业业务数据分析看板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f6f8;
+            color: #333;
+        }
+        header {
+            background: linear-gradient(to right, #2c3e50, #3498db);
+            color: white;
+            padding: 20px 40px;
+            text-align: center;
+            position: relative;
+        }
+        .kpi-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .kpi-card {
+            background: #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            width: 22%;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: scale(1.05);
+        }
+        .analysis {
+            padding: 20px;
+            background: #fff;
+            margin: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .charts {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 20px;
+        }
+        .chart-container {
+            width: 48%;
+            height: 400px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .download-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .download-btn:hover {
+            background: #2980b9;
+        }
+        @media (max-width: 768px) {
+            .kpi-card {
+                width: 48%;
+            }
+            .chart-container {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>企业业务数据分析看板</h1>
+    </header>
+
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <h3>合同金额总额</h3>
+            <p id="totalContractAmount">0</p>
+        </div>
+        <div class="kpi-card">
+            <h3>合同利润总额</h3>
+            <p id="totalProfit">0</p>
+        </div>
+        <div class="kpi-card">
+            <h3>平均合同单价</h3>
+            <p id="avgContractPrice">0</p>
+        </div>
+        <div class="kpi-card">
+            <h3>合同单数总数</h3>
+            <p id="totalContracts">0</p>
+        </div>
+    </div>
+
+    <div class="analysis">
+        <h2>文字分析总结</h2>
+        <p>从数据来看，合同金额和合同利润在11月相比10月有明显增长。营销部的合同金额最高，其次是全民营销和门店业务。合同平均单价较高的部门包括招商加盟部、会销部和合道市场部。整体来看，合同数量增加，且合同利润占比提升，显示出良好的盈利能力。</p>
+    </div>
+
+    <div class="charts">
+        <div class="chart-container">
+            <canvas id="contractAmountChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="profitGrowthChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="contractsByDepartmentChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="avgContractPriceChart"></canvas>
+        </div>
+    </div>
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>信息来源</th>
+                <th>11月合同金额</th>
+                <th>10月合同金额</th>
+                <th>环比增长率</th>
+                <th>11月合同利润</th>
+                <th>10月合同利润</th>
+                <th>环比增长率</th>
+                <th>11月平均合同单价</th>
+                <th>10月平均合同单价</th>
+                <th>环比增长率</th>
+                <th>11月合同单数</th>
+                <th>10月合同单数</th>
+                <th>环比增长率</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 动态填充数据 -->
+        </tbody>
+    </table>
+
+    <button class="download-btn" onclick="downloadAsWord()">一键下载看板</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const data = [
+            ["招商加盟部", 208600, 127200, "", 197574, 125928, "", "nan", "nan", "", 7, 6, ""],
+            ["营销部", 3761089.38, 3102411.28, "", 2734272.15, 2499117.95, "", "nan", "nan", "", 523, 505, ""],
+            ["新媒体", 283131.98, 115018.21, "", 258268.65, 108459.03, "", "nan", "nan", "", 117, 127, ""],
+            ["全民营销", 2467254.96, 2176385.6, "", 1912336.93, 1398428.29, "", "nan", "nan", "", 417, 352, ""],
+            ["门店业务", 465502, 506196, "", 382026.03, 252555.04, "", "nan", "nan", "", 145, 116, ""],
+            ["交付中心", 1045070, 298100, "", 693029.3, 219639, "", "nan", "nan", "", 10, 7, ""],
+            ["加盟商", 210300, 123780, "", 164462, 101222.2, "", "nan", "nan", "", 8, 7, ""],
+            ["会销部", 1157117.04, 710466.58, "", 1104517.87, 686431.93, "", "nan", "nan", "", 103, 48, ""],
+            ["合道市场部", 55730, 120300, "", 33537.7, 89741, "", "nan", "nan", "", 8, 17, ""],
+            ["城市合伙人", 21728.58, 69688.61, "", 16598.69, 45277.82, "", "nan", "nan", "", 6, 10, ""],
+            ["邦财大会销", 143601.98, "", "", 103225.96, "", "", "nan", "", "", 3, "", ""],
+            ["汇总", 9675523.94, 7349546.28, "", 7496623.32, 5526800.26, "", 5577.84, 4624.94, "", 1344, 1195, ""]
+        ];
+
+        let totalContractAmount = 0;
+        let totalProfit = 0;
+        let totalContracts = 0;
+        let avgContractPrice = 0;
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const contractAmount = parseFloat(row[1]);
+            const profit = parseFloat(row[5]);
+            const contracts = parseInt(row[11]);
+
+            totalContractAmount += contractAmount;
+            totalProfit += profit;
+            totalContracts += contracts;
+        }
+
+        document.getElementById("totalContractAmount").textContent = totalContractAmount.toFixed(2);
+        document.getElementById("totalProfit").textContent = totalProfit.toFixed(2);
+        document.getElementById("totalContracts").textContent = totalContracts;
+        avgContractPrice = totalContractAmount / totalContracts;
+        document.getElementById("avgContractPrice").textContent = avgContractPrice.toFixed(2);
+
+        // 填充表格数据
+        const tbody = document.querySelector("#dataTable tbody");
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const source = row[0];
+            const contractAmount11 = parseFloat(row[1]);
+            const contractAmount10 = parseFloat(row[2]);
+            const profit11 = parseFloat(row[4]);
+            const profit10 = parseFloat(row[5]);
+            const contracts11 = parseInt(row[10]);
+            const contracts10 = parseInt(row[11]);
+
+            let growthRateCA = "";
+            if (contractAmount10 !== 0) {
+                growthRateCA = ((contractAmount11 - contractAmount10) / contractAmount10 * 100).toFixed(2) + "%";
+            } else {
+                growthRateCA = "N/A";
+            }
+
+            let growthRateProfit = "";
+            if (profit10 !== 0) {
+                growthRateProfit = ((profit11 - profit10) / profit10 * 100).toFixed(2) + "%";
+            } else {
+                growthRateProfit = "N/A";
+            }
+
+            let growthRateContracts = "";
+            if (contracts10 !== 0) {
+                growthRateContracts = ((contracts11 - contracts10) / contracts10 * 100).toFixed(2) + "%";
+            } else {
+                growthRateContracts = "N/A";
+            }
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${source}</td>
+                <td>${contractAmount11.toFixed(2)}</td>
+                <td>${contractAmount10.toFixed(2)}</td>
+                <td style="color:${growthRateCA.includes("-") ? "red" : "green"}">${growthRateCA}</td>
+                <td>${profit11.toFixed(2)}</td>
+                <td>${profit10.toFixed(2)}</td>
+                <td style="color:${growthRateProfit.includes("-") ? "red" : "green"}">${growthRateProfit}</td>
+                <td>${row[7]}</td>
+                <td>${row[9]}</td>
+                <td style="color:${row[8].includes("-") ? "red" : "green"}">${row[8]}</td>
+                <td>${contracts11}</td>
+                <td>${contracts10}</td>
+                <td style="color:${growthRateContracts.includes("-") ? "red" : "green"}">${growthRateContracts}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        // 合同金额柱状图
+        const ctx1 = document.getElementById('contractAmountChart').getContext('2d');
+        const contractAmountData = data.map(item => ({ label: item[0], value: parseFloat(item[1]) }));
+        new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: contractAmountData.map(d => d.label),
+                datasets: [{
+                    label: '合同金额（元）',
+                    data: contractAmountData.map(d => d.value),
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 合同利润增长率折线图
+        const ctx2 = document.getElementById('profitGrowthChart').getContext('2d');
+        const profitGrowthData = data.map(item => ({
+            label: item[0],
+            value: parseFloat(item[4])
+        }));
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: profitGrowthData.map(d => d.label),
+                datasets: [{
+                    label: '合同利润（元）',
+                    data: profitGrowthData.map(d => d.value),
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 合同数量横向条形图
+        const ctx3 = document.getElementById('contractsByDepartmentChart').getContext('2d');
+        const contractsData = data.map(item => ({
+            label: item[0],
+            value: parseInt(item[10])
+        }));
+        new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: contractsData.map(d => d.label),
+                datasets: [{
+                    label: '合同数量',
+                    data: contractsData.map(d => d.value),
+                    backgroundColor: 'rgba(255, 206, 86, 0.6)',
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.x;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 平均合同单价饼图
+        const ctx4 = document.getElementById('avgContractPriceChart').getContext('2d');
+        const avgPriceData = data.map(item => ({
+            label: item[0],
+            value: parseFloat(item[7])
+        }));
+        new Chart(ctx4, {
+            type: 'pie',
+            data: {
+                labels: avgPriceData.map(d => d.label),
+                datasets: [{
+                    label: '平均合同单价（元）',
+                    data: avgPriceData.map(d => d.value),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed} 元`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        function downloadAsWord() {
+            const doc = new Blob(['<html><body><h1>企业业务数据分析看板</h1>'], { type: 'text/html' });
+            const url = URL.createObjectURL(doc);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '企业业务数据分析看板.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
