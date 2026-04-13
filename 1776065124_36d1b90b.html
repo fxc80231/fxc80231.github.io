@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业营销合同与客户经营数据分析看板</title>
+    <!-- 引入 Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 DataLabels 插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <!-- 引入 html-docx-js -->
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
+    <!-- 引入 FileSaver.js -->
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --success-color: #27ae60;
+            --danger-color: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 头部样式 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .btn-download {
+            background-color: #fff;
+            color: var(--accent-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            background-color: #f0f0f0;
+        }
+
+        /* 分析总结卡片 */
+        .summary-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .summary-card h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .summary-content {
+            font-size: 14px;
+            color: #555;
+            text-align: justify;
+        }
+
+        /* 图表网格布局 */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: 400px;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+
+        /* 表格样式 */
+        .table-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+
+        th:first-child, td:first-child {
+            text-align: left;
+            position: sticky;
+            left: 0;
+            background-color: var(--card-bg);
+            z-index: 10;
+            font-weight: 600;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background-color: #f1f7ff;
+        }
+
+        .positive { color: var(--success-color); font-weight: bold; }
+        .negative { color: var(--danger-color); font-weight: bold; }
+        .neutral { color: #7f8c8d; }
+
+        /* 底部按钮 */
+        .footer-actions {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .chart-card {
+                height: 350px;
+            }
+            header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="dashboard-content">
+    <header>
+        <h1>企业营销合同与客户经营数据分析看板</h1>
+        <button class="btn-download" onclick="downloadWord()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            下载 Word 报告
+        </button>
+    </header>
+
+    <!-- 文字分析总结 -->
+    <div class="summary-card">
+        <h2>📊 营运情况深度分析总结</h2>
+        <div class="summary-content">
+            <p><strong>整体营运概况：</strong>本次分析涵盖 11 家核心及战略客户，2025 年预计总营收规模达到 68,800 万元。数据显示，企业业务结构呈现明显的“头部效应”，前五大战略客户贡献了超过 80% 的营收总额，其中信息技术服务业与制造业为两大核心支柱。整体综合毛利率加权平均约为 24.5%，显示出较强的盈利能力，尤其是信息技术类客户（如星途创科、天合智联）毛利率高达 40% 以上，显著拉高了整体利润水平。</p>
+            
+            <p><strong>关键增长点：</strong>季度趋势分析表明，业务呈现强劲的"V 型”复苏与增长态势。Q1 受季节性因素影响营收相对较低（约 1.4 亿元），但随后逐季攀升，Q4 预计达到峰值（约 2.05 亿元），环比增长率显著。新增订单金额总计 73,780 万元，高于当前年度总营收，预示着未来一年业绩将持续扩张。特别是华南与华东区域，凭借高复购率（普遍接近 100%）和高新增订单，成为驱动增长的双引擎。</p>
+            
+            <p><strong>风险点警示：</strong>尽管回款率整体保持在 95% 以上的健康水平，但部分建筑业客户（如盛宏源建设、城建兴业）的期末应收账款绝对值较高，且毛利率偏低（12%-13%），存在资金占用成本高且利润薄的双重风险。此外，普通客户层级虽然数量不少，但单体贡献值低且复购率不足 90%，长尾客户的维护成本效益比有待优化。</p>
+            
+            <p><strong>策略建议：</strong>建议实施差异化客户管理策略。对于高毛利的信息技术战略客户，应加大资源倾斜，挖掘交叉销售机会；对于建筑类客户，需重点加强应收账款催收机制，缩短回款周期，并尝试通过供应链优化提升其项目毛利。同时，针对普通客户群体，可设计标准化产品包以提升服务效率，或设定更高的准入门槛，将精力聚焦于高价值客户的深耕。</p>
+        </div>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="charts-grid">
+        <!-- 图表 1: 各部门/品类合同金额排名 (柱状图) -->
+        <div class="chart-card">
+            <div class="chart-title">2025 年各行业营收总额排名 (万元)</div>
+            <div class="chart-container">
+                <canvas id="barChartIndustry"></canvas>
+            </div>
+        </div>
+
+        <!-- 图表 2: 区域分布 (环形图) -->
+        <div class="chart-card">
+            <div class="chart-title">营收区域分布占比</div>
+            <div class="chart-container">
+                <canvas id="doughnutChartRegion"></canvas>
+            </div>
+        </div>
+
+        <!-- 图表 3: 季度趋势 (折线图) -->
+        <div class="chart-card">
+            <div class="chart-title">2025 年季度营收趋势分析 (万元)</div>
+            <div class="chart-container">
+                <canvas id="lineChartTrend"></canvas>
+            </div>
+        </div>
+
+        <!-- 图表 4: 客户等级对比 (横向条形图) -->
+        <div class="chart-card">
+            <div class="chart-title">不同客户等级新增订单金额对比 (万元)</div>
+            <div class="chart-container">
+                <canvas id="horizontalBarChartLevel"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详细数据表格 -->
+    <div class="table-container">
+        <h3 style="margin-top:0; color:var(--primary-color); margin-bottom:15px;">📋 客户详细经营数据对比表</h3>
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>客户全称</th>
+                    <th>行业</th>
+                    <th>等级</th>
+                    <th>区域</th>
+                    <th>2025 总营收</th>
+                    <th>Q4 营收</th>
+                    <th>Q3-Q4 环比</th>
+                    <th>综合毛利率</th>
+                    <th>回款率</th>
+                    <th>应收账款</th>
+                    <th>新增订单</th>
+                    <th>复购率</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- JS 动态填充 -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer-actions">
+        <button class="btn-download" style="margin: 0 auto; font-size: 16px; padding: 12px 30px;" onclick="downloadWord()">
+            一键下载完整 Word 分析报告
+        </button>
+    </div>
+</div>
+
+<script>
+    // --- 1. 数据准备与处理 ---
+    const rawData = [
+        {id: "KH2026001", name: "华宇恒通实业集团有限公司", industry: "制造业", level: "战略客户", years: 12, region: "华北", revenue: 12800, q1: 2800, q2: 3200, q3: 3500, q4: 3300, margin: 18.5, collection: 98.2, ar: 230.4, newOrder: 13500, repurchase: 100, manager: "王建军"},
+        {id: "KH2026002", name: "星途创科信息技术集团股份有限公司", industry: "信息技术服务业", level: "战略客户", years: 10, region: "华东", revenue: 15600, q1: 3200, q2: 3600, q3: 4000, q4: 4800, margin: 42.3, collection: 97.5, ar: 390.0, newOrder: 16800, repurchase: 100, manager: "李梦琪"},
+        {id: "KH2026003", name: "盛宏源建设集团有限公司", industry: "建筑业", level: "战略客户", years: 15, region: "华中", revenue: 9600, q1: 1800, q2: 2600, q3: 3000, q4: 2200, margin: 12.8, collection: 96.8, ar: 307.2, newOrder: 10200, repurchase: 98, manager: "刘志强"},
+        {id: "KH2026004", name: "鑫瑞联商贸集团有限公司", industry: "批发零售业", level: "战略客户", years: 8, region: "华南", revenue: 8200, q1: 1600, q2: 1800, q3: 2000, q4: 2800, margin: 11.2, collection: 97.0, ar: 246.0, newOrder: 8800, repurchase: 100, manager: "张雨晴"},
+        {id: "KH2026005", name: "天合智联科技发展集团有限公司", industry: "信息技术服务业", level: "战略客户", years: 9, region: "西南", revenue: 7500, q1: 1500, q2: 1800, q3: 2100, q4: 2100, margin: 45.6, collection: 98.0, ar: 150.0, newOrder: 8100, repurchase: 100, manager: "陈浩然"},
+        {id: "KH2026006", name: "中汇智造机械有限公司", industry: "制造业", level: "核心客户", years: 7, region: "华东", revenue: 3800, q1: 850, q2: 950, q3: 1050, q4: 950, margin: 16.8, collection: 95.5, ar: 171.0, newOrder: 4100, repurchase: 96, manager: "赵伟"},
+        {id: "KH2026007", name: "悦享优品商贸有限公司", industry: "批发零售业", level: "核心客户", years: 6, region: "华南", revenue: 2900, q1: 550, q2: 650, q3: 700, q4: 1000, margin: 10.5, collection: 94.2, ar: 168.2, newOrder: 3200, repurchase: 95, manager: "林晓燕"},
+        {id: "KH2026008", name: "云帆数字技术有限公司", industry: "信息技术服务业", level: "核心客户", years: 8, region: "华北", revenue: 3200, q1: 700, q2: 750, q3: 850, q4: 900, margin: 38.2, collection: 96.0, ar: 128.0, newOrder: 3500, repurchase: 98, manager: "孙宇"},
+        {id: "KH2026009", name: "城建兴业工程有限公司", industry: "建筑业", level: "核心客户", years: 11, region: "华中", revenue: 4200, q1: 800, q2: 1100, q3: 1300, q4: 1000, margin: 13.5, collection: 93.8, ar: 260.4, newOrder: 4500, repurchase: 92, manager: "周明"},
+        {id: "KH2026012", name: "佳惠生活超市连锁有限公司", industry: "批发零售业", level: "普通客户", years: 6, region: "华中", revenue: 520, q1: 110, q2: 120, q3: 130, q4: 160, margin: 9.8, collection: 90.5, ar: 49.4, newOrder: 560, repurchase: 85, manager: "黄丽"},
+        {id: "KH2026019", name: "星辰文化传媒有限公司", industry: "租赁和商务服务业", level: "普通客户", years: 3, region: "华南", revenue: 480, q1: 100, q2: 120, q3: 130, q4: 130, margin: 30.6, collection: 91.0, ar: 43.2, newOrder: 520, repurchase: 87, manager: "苏晴"}
+    ];
+
+    // 工具函数：格式化金额
+    const formatMoney = (num) => {
+        if (num === null || num === undefined || isNaN(num)) return "-";
+        return num.toLocaleString('zh-CN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    };
+
+    // 工具函数：格式化百分比
+    const formatPercent = (num) => {
+        if (num === null || num === undefined || isNaN(num)) return "-";
+        return num.toFixed(1) + '%';
+    };
+
+    // 聚合数据计算
+    const aggregateData = {
+        byIndustry: {},
+        byRegion: {},
+        byLevel: {},
+        quarterlyTotal: [0, 0, 0, 0] // Q1, Q2, Q3, Q4
+    };
+
+    rawData.forEach(item => {
+        // Industry
+        if (!aggregateData.byIndustry[item.industry]) aggregateData.byIndustry[item.industry] = 0;
+        aggregateData.byIndustry[item.industry] += item.revenue;
+
+        // Region
+        if (!aggregateData.byRegion[item.region]) aggregateData.byRegion[item.region] = 0;
+        aggregateData.byRegion[item.region] += item.revenue;
+
+        // Level
+        if (!aggregateData.byLevel[item.level]) aggregateData.byLevel[item.level] = 0;
+        aggregateData.byLevel[item.level] += item.newOrder; // 使用新增订单作为对比指标
+
+        // Quarterly
+        aggregateData.quarterlyTotal[0] += item.q1;
+        aggregateData.quarterlyTotal[1] += item.q2;
+        aggregateData.quarterlyTotal[2] += item.q3;
+        aggregateData.quarterlyTotal[3] += item.q4;
+    });
+
+    // --- 2. 渲染表格 ---
+    const tableBody = document.getElementById('tableBody');
+    rawData.forEach(row => {
+        const momGrowth = row.q3 === 0 ? 0 : ((row.q4 - row.q3) / row.q3 * 100);
+        const growthClass = momGrowth > 0 ? 'positive' : (momGrowth < 0 ? 'negative' : 'neutral');
+        const growthSign = momGrowth > 0 ? '+' : '';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row.name}</td>
+            <td>${row.industry}</td>
+            <td><span style="padding:2px 6px; border-radius:4px; background:${row.level.includes('战略')?'#e3f2fd':'#f5f5f5'}; color:${row.level.includes('战略')?'#1976d2':'#555'}; font-size:12px;">${row.level}</span></td>
+            <td>${row.region}</td>
+            <td>${formatMoney(row.revenue)}</td>
+            <td>${formatMoney(row.q4)}</td>
+            <td class="${growthClass}">${growthSign}${formatPercent(momGrowth)}</td>
+            <td>${formatPercent(row.margin)}</td>
+            <td>${formatPercent(row.collection)}</td>
+            <td>${formatMoney(row.ar)}</td>
+            <td>${formatMoney(row.newOrder)}</td>
+            <td>${formatPercent(row.repurchase)}</td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    // --- 3. 图表配置通用选项 ---
+    Chart.defaults.font.family = "'Segoe UI', 'Helvetica', 'Arial', sans-serif";
+    Chart.defaults.color = '#666';
+    
+    const datalabelsConfig = {
+        anchor: 'end',
+        align: 'top',
+        formatter: (value, context) => {
+            if (context.chart.config.type === 'pie' || context.chart.config.type === 'doughnut') {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percent = ((value / total) * 100).toFixed(1) + '%';
+                const valStr = value >= 1000 ? (value/1000).toFixed(1) + 'k' : value;
+                return `${percent}\n(${valStr})`;
+            }
+            return value >= 1000 ? (value/1000).toFixed(1) + 'k' : value;
+        },
+        color: '#333',
+        font: { weight: 'bold', size: 11 },
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        padding: 4,
+        borderRadius: 4,
+        display: 'auto'
+    };
+
+    // --- 4. 初始化图表 ---
+
+    // A. 柱状图：行业营收
+    const ctxBar = document.getElementById('barChartIndustry').getContext('2d');
+    const industryLabels = Object.keys(aggregateData.byIndustry);
+    const industryData = Object.values(aggregateData.byIndustry);
+    
+    new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+            labels: industryLabels,
+            datasets: [{
+                label: '营收总额 (万元)',
+                data: industryData,
+                backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6'],
+                borderRadius: 6,
+                barPercentage: 0.6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: { ...datalabelsConfig, anchor: 'end', align: 'top', formatter: (v) => formatMoney(v) }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // B. 环形图：区域分布
+    const ctxDoughnut = document.getElementById('doughnutChartRegion').getContext('2d');
+    const regionLabels = Object.keys(aggregateData.byRegion);
+    const regionData = Object.values(aggregateData.byRegion);
+    const regionColors = ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#34495e'];
+
+    new Chart(ctxDoughnut, {
+        type: 'doughnut',
+        data: {
+            labels: regionLabels,
+            datasets: [{
+                data: regionData,
+                backgroundColor: regionColors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 10 } },
+                datalabels: { 
+                    color: '#fff', 
+                    font: { weight: 'bold' },
+                    formatter: (value, context) => {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percent = ((value / total) * 100).toFixed(1) + '%';
+                        return percent;
+                    }
+                }
+            }
+        }
+    });
+
+    // C. 折线图：季度趋势
+    const ctxLine = document.getElementById('lineChartTrend').getContext('2d');
+    
+    new Chart(ctxLine, {
+        type: 'line',
+        data: {
+            labels: ['2025 Q1', '2025 Q2', '2025 Q3', '2025 Q4'],
+            datasets: [{
+                label: '季度总营收 (万元)',
+                data: aggregateData.quarterlyTotal,
+                borderColor: '#2c3e50',
+                backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#2c3e50',
+                pointBorderWidth: 2,
+                pointRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: { 
+                    ...datalabelsConfig, 
+                    anchor: 'end', 
+                    align: 'top', 
+                    color: '#2c3e50',
+                    formatter: (v) => formatMoney(v)
+                }
+            },
+            scales: {
+                y: { beginAtZero: false, grid: { color: '#f0f0f0' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // D. 横向条形图：客户等级新增订单
+    const ctxHoriz = document.getElementById('horizontalBarChartLevel').getContext('2d');
+    const levelLabels = Object.keys(aggregateData.byLevel);
+    const levelData = Object.values(aggregateData.byLevel);
+
+    new Chart(ctxHoriz, {
+        type: 'bar',
+        data: {
+            labels: levelLabels,
+            datasets: [{
+                label: '新增订单金额 (万元)',
+                data: levelData,
+                indexAxis: 'y',
+                backgroundColor: ['#e74c3c', '#3498db', '#95a5a6'],
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: { 
+                    ...datalabelsConfig, 
+                    anchor: 'end', 
+                    align: 'right', 
+                    color: '#333',
+                    formatter: (v) => formatMoney(v)
+                }
+            },
+            scales: {
+                x: { beginAtZero: true, grid: { color: '#f0f0f0' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+
+    // --- 5. Word 下载功能实现 ---
+    function downloadWord() {
+        const content = document.getElementById('dashboard-content').innerHTML;
+        
+        // 克隆内容以进行清理，移除按钮等交互元素
+        const clone = document.createElement('div');
+        clone.innerHTML = content;
+        
+        // 移除下载按钮
+        const buttons = clone.querySelectorAll('.btn-download');
+        buttons.forEach(btn => btn.remove());
+
+        // 获取所有 Canvas 并转换为图片 DataURL
+        const canvases = document.querySelectorAll('canvas');
+        const canvasPromises = Array.from(canvases).map((canvas, index) => {
+            return new Promise(resolve => {
+                const imgData = canvas.toDataURL('image/png', 1.0);
+                // 在克隆的 HTML 中，用 img 标签替换 canvas 标签
+                // 注意：我们需要找到克隆体中对应的索引位置，或者重新构建结构
+                // 这里采用简单策略：在原始 HTML 字符串中替换可能比较复杂，
+                // 更好的方式是直接操作 clone 中的 canvas 元素
+                const cloneCanvas = clone.querySelectorAll('canvas')[index];
+                if(cloneCanvas) {
+                    const img = document.createElement('img');
+                    img.src = imgData;
+                    img.style.width = '100%';
+                    img.style.maxWidth = '600px';
+                    img.style.height = 'auto';
+                    cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
+                }
+                resolve();
+            });
+        });
+
+        Promise.all(canvasPromises).then(() => {
+            // 构建完整的 HTML 文档结构用于 Word
+            const fullHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: 'SimSun', 'Songti SC', serif; color: #000; }
+                        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+                        h2 { color: #2c3e50; margin-top: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                        th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+                        th { background-color: #f0f0f0; font-weight: bold; }
+                        .summary { background: #f9f9f9; padding: 15px; border-left: 5px solid #3498db; margin: 20px 0; }
+                        img { max-width: 100%; height: auto; margin: 10px 0; }
+                        .chart-card { margin-bottom: 30px; page-break-inside: avoid; }
+                        .chart-title { font-weight: bold; text-align: center; margin-bottom: 10px; }
+                    </style>
+                </head>
+                <body>
+                    ${clone.innerHTML}
+                </body>
+                </html>
+            `;
+
+            // 使用 html-docx-js 转换
+            try {
+                const converted = htmlDocx.asBlob(fullHtml);
+                saveAs(converted, '企业营销合同数据分析报告.docx');
+            } catch (e) {
+                alert("生成 Word 文档失败，请检查浏览器兼容性或控制台错误。\n错误信息：" + e.message);
+                console.error(e);
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
